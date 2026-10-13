@@ -40,7 +40,7 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "raylib [models] example - mesh generation");
 
     // We generate a checked image for texturing
-    Image checked = GenImageChecked(2, 2, 1, 1, RED, GREEN);
+    Image checked = GenImageChecked(2, 2, 1, 1, BLUE, PURPLE);
     Texture2D texture = LoadTextureFromImage(checked);
     UnloadImage(checked);
 
@@ -60,7 +60,6 @@ int main(void)
     // Model drawing position
     Vector3 position = { 0.0f, 0.0f, 0.0f };
 
-    int currentModel = 0;
 
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
@@ -134,13 +133,13 @@ static Mesh GenMeshCustom(TMesh& tmesh)
 
             // Positions: xyz
             mesh.vertices[dst * 3 + 0] = (float)p[0];
-            mesh.vertices[dst * 3 + 1] = (float)p[2];
-            mesh.vertices[dst * 3 + 2] = (float)p[1];
+            mesh.vertices[dst * 3 + 1] = (float)p[1];
+            mesh.vertices[dst * 3 + 2] = (float)p[2];
 
             // Normals: xyz
             mesh.normals[dst * 3 + 0] = (float)n[0];
-            mesh.normals[dst * 3 + 1] = (float)n[2];
-            mesh.normals[dst * 3 + 2] = (float)n[1];
+            mesh.normals[dst * 3 + 1] = (float)n[1];
+            mesh.normals[dst * 3 + 2] = (float)n[2];
 
             // Basic planar UVs. Replace this mapping if the mesh needs a
             // specific texture layout.
