@@ -12,6 +12,11 @@ inline double gaussian(double x, double sigma)
            / std::sqrt(2.0 * PI * variance);
 }
 
+inline double wyvill(double dist_sqrd, int n)
+{
+    return std::pow((1-dist_sqrd), n);
+}
+
 class Blob{
     protected:
         float threshold;

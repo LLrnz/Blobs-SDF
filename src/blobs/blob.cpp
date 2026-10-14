@@ -15,7 +15,7 @@ float  PointBlob::Value(const Vector& p){
     float v =0;
     for(size_t i = 0; i < centers.size(); i++){
         float dist = Norm(p-centers[i]);
-        v += gaussian(dist, potentials[i]);
+        v += wyvill(dist/potentials[i], 2);
     }
     v -= threshold;
     return v;
