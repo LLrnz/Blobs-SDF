@@ -19,8 +19,16 @@
 #include "base/include/box.h"
 #include "base/include/implicits.h"
 #include "base/include/mesh.h"
+#include "rcamera.h"
+#include "../include/rlights.h"
+#include "raymath.h"
 
 #define NUM_MODELS  9               // Parametric 3d shapes to generate
+#if defined(PLATFORM_DESKTOP)
+    #define GLSL_VERSION            330
+#else   // PLATFORM_ANDROID, PLATFORM_WEB
+    #define GLSL_VERSION            100
+#endif
 
 //------------------------------------------------------------------------------------
 // Module Functions Declaration
@@ -48,15 +56,44 @@ int main(void)
     TMesh mesh;
     implicit.Polygonize(31, mesh, Box(2.0));
     Model models = LoadModelFromMesh(GenMeshCustom(mesh));
+    models.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
 
     // NOTE: Generated meshes could be exported using ExportMesh()
 
-    // Set checked texture as default diffuse component for all models material
-    models.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+    
+    // // Load lighting shader
+    // Shader shader = LoadShader(TextFormat("res/shaders/sahder2BG_vert.glsl", GLSL_VERSION),
+    //                            TextFormat("res/shaders/sahder2BG_frag.glsl", GLSL_VERSION));
+    // // Get shader locations
+    // shader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(shader, "mvpMatrix");
+    // shader.locs[SHADER_LOC_VERTEX_NORMAL] = GetShaderLocation(shader, "v_normal");
+    // shader.locs[SHADER_LOC_VERTEX_COLOR] = GetShaderLocation(shader, "color");
 
-    // Define the camera to look into our 3d world
-    Camera camera = { { 5.0f, 5.0f, 5.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 45.0f, 0 };
+    // //Set shader value: light source
+    // int lightDirLoc = GetShaderLocation(shader, "lightDir");
+    // SetShaderValue(shader, lightDirLoc, (float[4]){ 0.0f, 0.0f, -1.0f, 0.0f }, SHADER_UNIFORM_VEC4);
 
+
+    // // Load default material (using raylib intenral default shader) for non-instanced mesh drawing
+    // // WARNING: Default shader enables vertex color attribute BUT GenMeshCube() does not generate vertex colors, so,
+    // // when drawing the color attribute is disabled and a default color value is provided as input for thevertex attribute
+    // models.materials[0].shader = shader;
+    // // Set checked texture as default diffuse component for all models material
+  
+    // models.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = RED;
+
+    // Define the camera to look into our 3d world (position, target, up vector)
+    Camera camera = { 0 };
+    camera.position = (Vector3){ 0.0f, 2.0f, 4.0f };    // Camera position
+    camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };      // Camera looking at point
+    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+    camera.fovy = 60.0f;                                // Camera field-of-view Y
+    camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
+
+    int cameraMode = CAMERA_FIRST_PERSON;
+
+    DisableCursor();                    // Limit cursor to relative movement inside the window
+    
     // Model drawing position
     Vector3 position = { 0.0f, 0.0f, 0.0f };
 
@@ -69,7 +106,66 @@ int main(void)
     {
         // Update
         //----------------------------------------------------------------------------------
-        UpdateCamera(&camera, CAMERA_ORBITAL);
+        // Switch camera mode
+        if (IsKeyPressed(KEY_ONE))
+        {
+            cameraMode = CAMERA_FREE;
+            camera.up = (Vector3){ 0.0f, 1.0f, 0.0f }; // Reset roll
+        }
+
+        if (IsKeyPressed(KEY_TWO))
+        {
+            cameraMode = CAMERA_FIRST_PERSON;
+            camera.up = (Vector3){ 0.0f, 1.0f, 0.0f }; // Reset roll
+        }
+
+        if (IsKeyPressed(KEY_THREE))
+        {
+            cameraMode = CAMERA_THIRD_PERSON;
+            camera.up = (Vector3){ 0.0f, 1.0f, 0.0f }; // Reset roll
+        }
+
+        if (IsKeyPressed(KEY_FOUR))
+        {
+            cameraMode = CAMERA_ORBITAL;
+            camera.up = (Vector3){ 0.0f, 1.0f, 0.0f }; // Reset roll
+        }
+
+        // Switch camera projection
+        if (IsKeyPressed(KEY_P))
+        {
+            if (camera.projection == CAMERA_PERSPECTIVE)
+            {
+                // Create isometric view
+                cameraMode = CAMERA_THIRD_PERSON;
+                // Note: The target distance is related to the render distance in the orthographic projection
+                camera.position = (Vector3){ 0.0f, 2.0f, -100.0f };
+                camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };
+                camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+                camera.projection = CAMERA_ORTHOGRAPHIC;
+                camera.fovy = 20.0f; // near plane width in CAMERA_ORTHOGRAPHIC
+                CameraYaw(&camera, -135*DEG2RAD, true);
+                CameraPitch(&camera, -45*DEG2RAD, true, true, false);
+            }
+            else if (camera.projection == CAMERA_ORTHOGRAPHIC)
+            {
+                // Reset to default view
+                cameraMode = CAMERA_THIRD_PERSON;
+                camera.position = (Vector3){ 0.0f, 2.0f, 10.0f };
+                camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };
+                camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+                camera.projection = CAMERA_PERSPECTIVE;
+                camera.fovy = 60.0f;
+            }
+        }
+
+        // Update camera computes movement internally depending on the camera mode
+        // Some default standard keyboard/mouse inputs are hardcoded to simplify use
+        // For advanced camera controls, it's recommended to compute camera movement manually
+        UpdateCamera(&camera, cameraMode);                  // Update camera
+
+       
+    
 
         //----------------------------------------------------------------------------------
 
