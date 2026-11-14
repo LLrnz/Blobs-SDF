@@ -1,5 +1,6 @@
 #include "include/OperatorBlob.h"
 #include "../base/include/mathematics.h"
+#include "../base/include/implicits.h"
 #include <csignal>
 #include <memory>
 
@@ -40,7 +41,7 @@ void  UnionBlob::ComputeBBox(){
 DifferenceBlob::DifferenceBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right) : OperatorBlob(std::move(left), std::move(right)) {}
 
 float DifferenceBlob::Evaluate(const Vector& p){
-    return Math::Min(left_child->Evaluate(p), -right_child->Evaluate(p));
+    return Math::Min(left_child->Evaluate(p), 2* AnalyticScalarField::threshold - right_child->Evaluate(p));
 
 }
 

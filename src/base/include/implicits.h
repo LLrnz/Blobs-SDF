@@ -16,6 +16,7 @@ public:
   AnalyticScalarField(Node* root);
   virtual double Value(const Vector&) const;
   virtual Vector Gradient(const Vector&) const;
+  static inline double threshold = 0.5;
 
   // Normal
   virtual Vector Normal(const Vector&) const;

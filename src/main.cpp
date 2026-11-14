@@ -15,15 +15,15 @@
 *
 ********************************************************************************************/
 #include "base/include/mathematics.h"
-#include "blobs/include/OperatorBlob.h"
+// #include "blobs/include/OperatorBlob.h"
 #include "raylib.h"
 #include "base/include/box.h"
 #include "base/include/implicits.h"
 #include "base/include/mesh.h"
 #include "rcamera.h"
 #include "../include/rlights.h"
-#include "raymath.h"
-#include "blobs/include/Blob.h"
+// #include "raymath.h"
+// #include "blobs/include/Blob.h"
 #include "blobs/include/BlobParser.h"
 #include "gui/include/TreeEditor.h"
 #include <exception>
