@@ -97,9 +97,9 @@ int main(void)
 
     auto generate = [&]() {
         try {
-            BlobTree tree = ParseBlobTree(editor.GetText());
+            std::unique_ptr<Node> root = ParseBlobTree(editor.GetText());
 
-            AnalyticScalarField implicit(tree.root);
+            AnalyticScalarField implicit(root.get());
             TMesh mesh;
             implicit.Polygonize(64, mesh, Box(4.0));
 

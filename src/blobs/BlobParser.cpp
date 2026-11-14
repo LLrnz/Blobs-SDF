@@ -5,31 +5,32 @@
 #include <cctype>
 #include <cstdlib>
 #include <stdexcept>
+#include <vector>
 
 namespace {
 
 class Parser {
 public:
-    Parser(const std::string& src, BlobTree& tree) : s(src), tree(tree) {}
+    explicit Parser(const std::string& src) : s(src) {}
 
-    Node* ParseNode() {
+    std::unique_ptr<Node> ParseNode() {
         std::string name = Identifier();
         Expect('(');
 
-        Node* node = nullptr;
+        std::unique_ptr<Node> node;
         if (name == "sphere") {
             Vector c = Vec();
             float potential = Num();
-            node = Make<SphereBlob>(c, potential);
+            node = std::make_unique<SphereBlob>(c, potential);
         }
         else if (name == "capsule") {
             Vector a = Vec();
             Vector b = Vec();
             float potential = Num();
-            node = Make<CapsuleBlob>(a, b, potential);
+            node = std::make_unique<CapsuleBlob>(a, b, potential);
         }
         else if (IsOperator(name)) {
-            std::vector<Node*> children;
+            std::vector<std::unique_ptr<Node>> children;
             do {
                 children.push_back(ParseNode());
                 if (!Peek(')') && pos >= s.size())
@@ -39,9 +40,10 @@ public:
             if (children.size() < 2)
                 Error(name + " needs at least two children");
 
-            node = children[0];
+            // Fold left: each new operator takes ownership of the previous result
+            node = std::move(children[0]);
             for (size_t i = 1; i < children.size(); i++)
-                node = MakeOperator(name, node, children[i]);
+                node = MakeOperator(name, std::move(node), std::move(children[i]));
         }
         else {
             Error("unknown node '" + name + "'");
@@ -59,24 +61,18 @@ public:
 
 private:
     const std::string& s;
-    BlobTree& tree;
     size_t pos = 0;
-
-    template <typename T, typename... Args>
-    Node* Make(Args&&... args) {
-        tree.nodes.push_back(std::make_unique<T>(std::forward<Args>(args)...));
-        return tree.nodes.back().get();
-    }
 
     static bool IsOperator(const std::string& name) {
         return name == "union" || name == "blend" || name == "difference" || name == "intersection";
     }
 
-    Node* MakeOperator(const std::string& name, Node* l, Node* r) {
-        if (name == "union")      return Make<UnionBlob>(l, r);
-        if (name == "blend")      return Make<BlendBlob>(l, r);
-        if (name == "difference") return Make<DifferenceBlob>(l, r);
-        return Make<IntersectionBlob>(l, r);
+    static std::unique_ptr<Node> MakeOperator(const std::string& name,
+                                              std::unique_ptr<Node> l, std::unique_ptr<Node> r) {
+        if (name == "union")      return std::make_unique<UnionBlob>(std::move(l), std::move(r));
+        if (name == "blend")      return std::make_unique<BlendBlob>(std::move(l), std::move(r));
+        if (name == "difference") return std::make_unique<DifferenceBlob>(std::move(l), std::move(r));
+        return std::make_unique<IntersectionBlob>(std::move(l), std::move(r));
     }
 
     // Skips whitespace, commas and '#' comments.
@@ -149,10 +145,9 @@ private:
 
 } // namespace
 
-BlobTree ParseBlobTree(const std::string& text) {
-    BlobTree tree;
-    Parser parser(text, tree);
-    tree.root = parser.ParseNode();
+std::unique_ptr<Node> ParseBlobTree(const std::string& text) {
+    Parser parser(text);
+    std::unique_ptr<Node> root = parser.ParseNode();
     parser.ExpectEnd();
-    return tree;
+    return root;
 }

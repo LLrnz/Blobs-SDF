@@ -1,14 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
-#include <vector>
 #include "../../include/Node.h"
-
-// A parsed blob tree. `nodes` owns every node; `root` points into it.
-struct BlobTree {
-    std::vector<std::unique_ptr<Node>> nodes;
-    Node* root = nullptr;
-};
 
 // Parses a tree written as nested calls, for example:
 //
@@ -24,5 +17,6 @@ struct BlobTree {
 //            children; extra children fold left: union(a, b, c) = union(union(a, b), c).
 // Commas are optional separators, and '#' starts a comment that runs to the end of the line.
 //
+// Returns the root; operators own their children, so the root owns the whole tree.
 // Throws std::runtime_error("line L, col C: ...") on invalid input.
-BlobTree ParseBlobTree(const std::string& text);
+std::unique_ptr<Node> ParseBlobTree(const std::string& text);

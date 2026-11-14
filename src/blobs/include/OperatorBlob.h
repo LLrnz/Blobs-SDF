@@ -1,10 +1,12 @@
 #pragma once
 #include "Blob.h"
+#include <memory>
 
 class OperatorBlob: public Node{
     protected:
-        Node *left_child, *right_child;
-        OperatorBlob(Node* left, Node* right);
+        std::unique_ptr<Node> left_child, right_child;
+        OperatorBlob(std::unique_ptr<Node> l, std::unique_ptr<Node> r)
+        : left_child(std::move(l)), right_child(std::move(r)) {}
 };
 
 class BlendBlob: public OperatorBlob{
@@ -12,7 +14,7 @@ class BlendBlob: public OperatorBlob{
         float Evaluate(const Vector& p);
         float GetLipschitzBound();
         void  ComputeBBox();
-        BlendBlob(Node* left, Node* right);
+        BlendBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
 
 };
 
@@ -21,7 +23,7 @@ class UnionBlob: public OperatorBlob{
         float Evaluate(const Vector& p);
         float GetLipschitzBound();
         void  ComputeBBox();
-        UnionBlob(Node* left, Node* right);
+        UnionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
 };
 
 class DifferenceBlob: public OperatorBlob{
@@ -29,7 +31,7 @@ class DifferenceBlob: public OperatorBlob{
         float Evaluate(const Vector& p);
         float GetLipschitzBound();
         void  ComputeBBox();
-        DifferenceBlob(Node* left, Node* right);
+        DifferenceBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
 };
 
 class IntersectionBlob: public OperatorBlob{
@@ -37,5 +39,5 @@ class IntersectionBlob: public OperatorBlob{
         float Evaluate(const Vector& p);
         float GetLipschitzBound();
         void  ComputeBBox();
-        IntersectionBlob(Node* left, Node* right);
+        IntersectionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
 };
