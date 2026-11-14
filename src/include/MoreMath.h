@@ -5,6 +5,7 @@ class MoreVector{
     public:
         static float Dot(const Vector&, const Vector&);
         static Vector Cross(const Vector&, const Vector&);
+        static Vector DivideEachValue(const Vector& u, const Vector& v);
 };
 
 // Vector already provides dot (u * v) and cross (u / v) in mathematics.h.
@@ -14,6 +15,10 @@ inline float MoreVector::Dot(const Vector& u, const Vector& v){
 
 inline Vector MoreVector::Cross(const Vector& u, const Vector& v){
     return u / v;
+}
+
+inline Vector MoreVector::DivideEachValue(const Vector& u, const Vector& v){
+    return Vector(u[0]/v[0], u[1]/v[1], u[2]/v[2]);
 }
 
 class Matrix33{

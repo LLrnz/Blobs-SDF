@@ -1,4 +1,5 @@
 #include "include/UnaryOpBlob.h"
+#include <functional>
 
 
 namespace {
@@ -84,7 +85,7 @@ ScaleBlob::ScaleBlob(Vector s, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), s(s) {}
 
 float ScaleBlob::Evaluate(const Vector& p){
-    throw("not implemented");
+    return child->Evaluate(MoreVector::DivideEachValue(p, s));
 }
 
 float ScaleBlob::GetLipschitzBound(){
@@ -100,7 +101,10 @@ TwistBlob::TwistBlob(double degreesPerUnit, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(degreesPerUnit * kDegToRad) {}
 
 float TwistBlob::Evaluate(const Vector& p){
-    throw("not implemented");
+    Matrix33 rot = Matrix33(  Vector(std::cos(p[1]*rate), 0, -std::sin(p[1]*rate)),
+                    Vector(0, 1, 0), 
+                    Vector(std::sin(p[1]*rate), 0, std::cos(p[1]*rate)));
+    return child->Evaluate(rot*p);
 }
 
 float TwistBlob::GetLipschitzBound(){
