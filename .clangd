@@ -1,0 +1,9 @@
+CompileFlags:
+  Add:
+    - -std=c++17
+    - -Iinclude
+    - -I/usr/local/include
+    - -Isrc/base/include
+    - -Isrc/blobs/include
+    - -Isrc/include
+    - -Isrc/gui/include

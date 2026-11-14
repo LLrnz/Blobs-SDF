@@ -303,7 +303,9 @@ Vector AnalyticScalarField::Gradient(const Vector& p) const
 */
 Vector AnalyticScalarField::Normal(const Vector& p) const
 {
-  Vector normal = Normalized(Gradient(p));
+  // Blob fields are positive inside the shape, so the gradient points inward.
+  // Negate it to get an outward-facing normal.
+  Vector normal = -Normalized(Gradient(p));
 
   return normal;
 }

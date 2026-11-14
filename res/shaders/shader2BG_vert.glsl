@@ -1,17 +1,17 @@
 #version 330
 
-in vec3 v_normal;
+layout(location = 0) in vec3 position;
+layout(location = 2) in vec3 normal;
 
-out vec4 fragment_color;
+uniform mat4 mvpMatrix;
+uniform mat4 matModel;
 
-uniform vec4 colDiffuse;
+out vec3 v_normal;
 
 void main()
 {
-    vec3 lightDir = normalize(vec3(0.0, 0.0, 1.0));
-    vec3 N = normalize(v_normal);
+    gl_Position = mvpMatrix * vec4(position, 1.0);
 
-    float costheta = max(dot(N, lightDir), 0.0);
-
-    fragment_color = vec4(colDiffuse.rgb * costheta, colDiffuse.a);
+    // Transform normals into world space
+    v_normal = mat3(transpose(inverse(matModel))) * normal;
 }

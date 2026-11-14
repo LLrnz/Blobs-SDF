@@ -64,7 +64,7 @@ int main(void)
     Texture2D texture = LoadTextureFromImage(checked);
     UnloadImage(checked);
 
-    Shader shader = LoadShader("res/shaders/shader2BG_frag.glsl", "res/shaders/shader2BG_vert.glsl");
+    Shader shader = LoadShader("res/shaders/shader2BG_vert.glsl", "res/shaders/shader2BG_frag.glsl");
     printf("Shader ID: %u\n", shader.id);
 
 
