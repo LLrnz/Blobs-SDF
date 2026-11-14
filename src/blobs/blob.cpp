@@ -1,34 +1,60 @@
-#include "include/blob.h"
+#include "include/Blob.h"
+#include "../base/include/mathematics.h"
+#include "../include/MoreMath.h"
+#include <algorithm>
 
-PointBlob::PointBlob(std::vector<Vector> centers,
-        std::vector<float> potentials, float threshold){
-            this->centers = centers;
-            this->potentials = potentials;
-            if (centers.size() != potentials.size()){
-                throw "Must have a potential for every center (must be same size).";
-            }
-            this->threshold = threshold;
-        }
-        
+Blob::Blob(float potential, float threshold){
+    this->potential = potential;
+    this->threshold = threshold;
+}
 
-float  PointBlob::Value(const Vector& p){
+float Blob::Evaluate(const Vector& p){
     float v =0;
-    for(size_t i = 0; i < centers.size(); i++){
-        float dist = Norm(p-centers[i]);
-        v += wyvill(dist/potentials[i], 2);
-    }
+    v += gaussian(Distance(p), potential);
+    
     v -= threshold;
     return v;
 }
 
-float  PointBlob::Lipschitz(){
+SphereBlob::SphereBlob(Vector center,
+        float potential, float threshold):Blob(potential, threshold){
+            this->center = center;
+        }
+        
+
+float  SphereBlob::Distance(const Vector& p){
+
+    return SquaredNorm(p-center);
+    
+}
+
+float  SphereBlob::GetLipschitzBound(){
    return 1; 
 }
 
-float  SegmentBlob::Value(const Vector& p){
-    return 1;
+void  SphereBlob::ComputeBBox(){
+    
 }
 
-float  SegmentBlob::Lipschitz(){
-    return 1;
+
+CapsuleBlob::CapsuleBlob(Vector a, Vector b, float potential, float threshold):Blob(potential, threshold){
+            this->a = a;
+            this->b = b;
+        }
+        
+
+float  CapsuleBlob::Distance(const Vector& p){
+
+    Vector pa = p - a;
+    Vector ba = b - a;
+    float h = std::clamp( MoreVector::Dot(pa,ba)/MoreVector::Dot(ba,ba), 0.0f, 1.0f );
+    return SquaredNorm( pa - ba*h ) - potential;
+}
+
+float  CapsuleBlob::GetLipschitzBound(){
+   return 1; 
+}
+
+void  CapsuleBlob::ComputeBBox(){
+    
 }

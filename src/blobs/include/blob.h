@@ -1,15 +1,17 @@
+#pragma once
 #include "../../base/include/mathematics.h"
 #include <vector>
+#include "../../include/Node.h"
 
 #include <cmath>
 
 inline double gaussian(double x, double sigma)
 {
     const double variance = sigma * sigma;
-    constexpr double PI = 3.14159265358979323846;
+    constexpr double pi = 3.14159265358979323846;
 
     return std::exp(-x * x / (2.0 * variance))
-           / std::sqrt(2.0 * PI * variance);
+           / std::sqrt(2.0 * pi * variance);
 }
 
 inline double wyvill(double dist_sqrd, int n)
@@ -17,32 +19,40 @@ inline double wyvill(double dist_sqrd, int n)
     return std::pow((1-dist_sqrd), n);
 }
 
-class Blob{
+class Blob: public Node{
     protected:
+        float potential;
         float threshold;
 
     public:
-        virtual float Value(const Vector& p)=0;
-        virtual float Lipschitz()=0;
+        Blob(float potential, float threshold);
+        float Evaluate(const Vector& p);
+        virtual float Distance(const Vector& p) = 0;
 };
 
-class PointBlob: public Blob{
+class SphereBlob: public Blob{
     protected:
-        std::vector<Vector> centers;
-        std::vector<float> potentials;
+        Vector center;
     
     public:
-        PointBlob(std::vector<Vector> centers, std::vector<float> potentials, float threshold);
-        float Value(const Vector& p);
-        float Lipschitz();
+        SphereBlob(Vector center, float potential, float threshold);
+        float Distance(const Vector& p);
+        float GetLipschitzBound();
+        void  ComputeBBox();
 };
 
-class SegmentBlob: public Blob{
+class CapsuleBlob: public Blob{
     protected:
         Vector a, b;
-    
+        float potential;
+        float threshold;
+
     public:
-        float Value(const Vector& p);
-        float Lipschitz();
+        CapsuleBlob(Vector a, Vector b, float potential, float threshold);
+
+        float Distance(const Vector& p);
+        float GetLipschitzBound();
+        void  ComputeBBox();
 
 };
+

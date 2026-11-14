@@ -14,7 +14,8 @@
 *   Copyright (c) 2017-2025 Ramon Santamaria (@raysan5)
 *
 ********************************************************************************************/
-
+#include "base/include/mathematics.h"
+#include "blobs/include/OperatorBlob.h"
 #include "raylib.h"
 #include "base/include/box.h"
 #include "base/include/implicits.h"
@@ -22,6 +23,8 @@
 #include "rcamera.h"
 #include "../include/rlights.h"
 #include "raymath.h"
+#include "blobs/include/Blob.h"
+
 
 #define NUM_MODELS  9               // Parametric 3d shapes to generate
 #if defined(PLATFORM_DESKTOP)
@@ -40,6 +43,7 @@ static Mesh GenMeshCustom(TMesh& tmesh);    // Generate a simple triangle mesh f
 //------------------------------------------------------------------------------------
 int main(void)
 {
+    SetTraceLogLevel(LOG_ALL);
     // Initialization
     //--------------------------------------------------------------------------------------
     const int screenWidth = 800;
@@ -52,35 +56,41 @@ int main(void)
     Texture2D texture = LoadTextureFromImage(checked);
     UnloadImage(checked);
 
-    AnalyticScalarField implicit;
+    CapsuleBlob* s1 = new CapsuleBlob(Vector(1,0,0), Vector(1,1.5,0), 0.7, 0.5);
+    SphereBlob* s2 = new SphereBlob(Vector(0,1,0), 0.7, 0.5);
+    UnionBlob* u1 = new UnionBlob(s1, s2);
+
+
+    AnalyticScalarField implicit = AnalyticScalarField(u1);
     TMesh mesh;
     implicit.Polygonize(31, mesh, Box(2.0));
     Model models = LoadModelFromMesh(GenMeshCustom(mesh));
-    models.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+    models.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = PURPLE;
 
-    // NOTE: Generated meshes could be exported using ExportMesh()
-
-    
-    // // Load lighting shader
-    // Shader shader = LoadShader(TextFormat("res/shaders/sahder2BG_vert.glsl", GLSL_VERSION),
-    //                            TextFormat("res/shaders/sahder2BG_frag.glsl", GLSL_VERSION));
-    // // Get shader locations
-    // shader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(shader, "mvpMatrix");
-    // shader.locs[SHADER_LOC_VERTEX_NORMAL] = GetShaderLocation(shader, "v_normal");
-    // shader.locs[SHADER_LOC_VERTEX_COLOR] = GetShaderLocation(shader, "color");
-
-    // //Set shader value: light source
-    // int lightDirLoc = GetShaderLocation(shader, "lightDir");
-    // SetShaderValue(shader, lightDirLoc, (float[4]){ 0.0f, 0.0f, -1.0f, 0.0f }, SHADER_UNIFORM_VEC4);
+    Shader shader = LoadShader("res/shaders/shader2BG_frag.glsl", "res/shaders/shader2BG_vert.glsl");
+    printf("Shader ID: %u\n", shader.id);
 
 
-    // // Load default material (using raylib intenral default shader) for non-instanced mesh drawing
-    // // WARNING: Default shader enables vertex color attribute BUT GenMeshCube() does not generate vertex colors, so,
-    // // when drawing the color attribute is disabled and a default color value is provided as input for thevertex attribute
-    // models.materials[0].shader = shader;
-    // // Set checked texture as default diffuse component for all models material
-  
-    // models.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = RED;
+    // Vertex attributes
+    shader.locs[SHADER_LOC_VERTEX_POSITION] =
+        GetShaderLocationAttrib(shader, "position");
+
+    shader.locs[SHADER_LOC_VERTEX_NORMAL] =
+        GetShaderLocationAttrib(shader, "normal");
+
+    // Matrices
+    shader.locs[SHADER_LOC_MATRIX_MVP] =
+        GetShaderLocation(shader, "mvpMatrix");
+
+    shader.locs[SHADER_LOC_MATRIX_MODEL] =
+        GetShaderLocation(shader, "matModel");
+
+    // Material color
+    shader.locs[SHADER_LOC_COLOR_DIFFUSE] =
+        GetShaderLocation(shader, "colDiffuse");
+
+    models.materials[0].shader = shader;
+
 
     // Define the camera to look into our 3d world (position, target, up vector)
     Camera camera = { 0 };

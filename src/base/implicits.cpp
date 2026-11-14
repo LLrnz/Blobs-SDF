@@ -1,5 +1,5 @@
 #include "include/implicits.h"
-#include "../blobs/include/blob.h"
+#include "../include/Node.h"
 #include "include/mathematics.h"
 #include <vector>
 
@@ -8,8 +8,9 @@ const double AnalyticScalarField::Epsilon = 1e-6;
 /*!
 \brief Constructor.
 */
-AnalyticScalarField::AnalyticScalarField()
+AnalyticScalarField::AnalyticScalarField(Node* root)
 {
+  this->root = root;
 }
 
 /*!
@@ -18,17 +19,7 @@ AnalyticScalarField::AnalyticScalarField()
 */
 double AnalyticScalarField::Value(const Vector& p) const
 {
-  std::vector<Vector> centers;
-  centers.push_back(Vector(0, 0, 0));
-  centers.push_back(Vector(1, 1, 1));
-
-  std::vector<float> potentials;
-    potentials.push_back(0.8);
-    potentials.push_back(0.7);
-
-  PointBlob pbs(centers, potentials,0.5);
-  float val = pbs.Value(p);
-  return val;
+  return root->Evaluate(p);
 }
 
 /*!

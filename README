@@ -1,2 +1,26 @@
 # Blobs&SDF
 using Raylib as a visualizer (for SDL2 is my greatest foe).
+
+game plan :
+- blob virtuel
+    - blob wyvill compacts
+    - blob infinis
+    - opérateurs
+        - différence
+        - union
+        - union lisse
+        - intersection
+
+    - evaluate
+
+    - borne lipschitz
+
+    - volume englobant
+
+
+
+
+- arbre de construction
+    - noeud
+        - blob 
+        - opérateur

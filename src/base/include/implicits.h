@@ -5,12 +5,15 @@
 #include <iostream>
 
 #include "mesh.h"
+#include "../../include/Node.h"
 
 class AnalyticScalarField
 {
 protected:
+  Node* root;
+
 public:
-  AnalyticScalarField();
+  AnalyticScalarField(Node* root);
   virtual double Value(const Vector&) const;
   virtual Vector Gradient(const Vector&) const;
 
