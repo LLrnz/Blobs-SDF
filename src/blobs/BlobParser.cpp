@@ -15,6 +15,10 @@ public:
 
     std::unique_ptr<Node> ParseNode() {
         std::string name = Identifier();
+        if (name == "node") {
+            pos -= 4;   // point the error at the placeholder itself
+            Error("replace the NODE placeholder with a primitive or an operator");
+        }
         Expect('(');
 
         std::unique_ptr<Node> node;

@@ -91,6 +91,10 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "raylib [models] example - mesh generation");
 
+    // ESC toggles between the editor and the camera instead of quitting;
+    // close the window (or Cmd+Q) to quit.
+    SetExitKey(KEY_NULL);
+
     // We generate a checked image for texturing
     Image checked = GenImageChecked(2, 2, 1, 1, BLUE, PURPLE);
     Texture2D texture = LoadTextureFromImage(checked);
@@ -207,18 +211,19 @@ int main(void)
     //--------------------------------------------------------------------------------------
 
     // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
+    while (!WindowShouldClose())    // Detect window close button (ESC is not the exit key)
     {
         // Update
         //----------------------------------------------------------------------------------
         // Two input modes:
         //  - editing: cursor is free, keys go to the text box, camera is still
         //  - camera:  cursor is captured, WASD + mouse move the camera
-        // Clicking the 3D view (or TAB) enters camera mode; TAB returns to the editor.
+        // Clicking the 3D view (or ESC) enters camera mode; ESC returns to the editor.
+        // While the file prompt is open, ESC belongs to it (cancel).
         bool toCamera = editor.focused &&
-            (IsKeyPressed(KEY_TAB) ||
+            ((IsKeyPressed(KEY_ESCAPE) && !editor.PromptOpen()) ||
              (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !editor.Contains(GetMousePosition())));
-        bool toEditor = !editor.focused && IsKeyPressed(KEY_TAB);
+        bool toEditor = !editor.focused && IsKeyPressed(KEY_ESCAPE);
 
         if (toCamera)
         {
@@ -309,9 +314,6 @@ int main(void)
         // For advanced camera controls, it's recommended to compute camera movement manually
         UpdateCamera(&camera, cameraMode);                  // Update camera
         }
-
-        // ESC cancels the file prompt instead of closing the window
-        SetExitKey(editor.PromptOpen() ? KEY_NULL : KEY_ESCAPE);
 
        
     
