@@ -46,6 +46,8 @@ const char* kHelp[] = {
     "sphere(cx cy cz, potential)",
     "capsule(ax ay az, bx by bz, potential)",
     "union | blend | difference | intersection(a, b, ...)",
+    "translate(x y z, a)  rotateX|Y|Z(deg, a)  scale(x y z, a)",
+    "twist(deg/unit y, a)  taper(k, a)  bend(deg/unit x, a)",
     "# comment    Ctrl/Cmd + Enter: generate, S: save, O: load",
     "Tab / Shift+Tab: indent    Double-click: select word",
     "Ctrl/Cmd + Z: undo, Shift+Z or Y: redo",
@@ -68,6 +70,14 @@ const InsertItem kInsertItems[] = {
     { "union",        "union(\n\tNODE,\n\tNODE\n)",                false },
     { "difference",   "difference(\n\tNODE,\n\tNODE\n)",           false },
     { "intersection", "intersection(\n\tNODE,\n\tNODE\n)",         false },
+    { "translate",    "translate(0 0 0,\n\tNODE\n)",               true  },
+    { "rotateX",      "rotateX(45,\n\tNODE\n)",                    false },
+    { "rotateY",      "rotateY(45,\n\tNODE\n)",                    false },
+    { "rotateZ",      "rotateZ(45,\n\tNODE\n)",                    false },
+    { "scale",        "scale(1 1 1,\n\tNODE\n)",                   false },
+    { "twist",        "twist(45,\n\tNODE\n)",                      false },
+    { "taper",        "taper(0.5,\n\tNODE\n)",                     false },
+    { "bend",         "bend(30,\n\tNODE\n)",                       false },
 };
 constexpr int kInsertCount = sizeof(kInsertItems) / sizeof(kInsertItems[0]);
 

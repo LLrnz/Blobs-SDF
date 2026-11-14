@@ -1,6 +1,7 @@
 #include "include/BlobParser.h"
 #include "include/Blob.h"
-#include "include/OperatorBlob.h"
+#include "include/BinaryOpBlob.h"
+#include "include/UnaryOpBlob.h"
 
 #include <cctype>
 #include <cstdlib>
@@ -49,6 +50,41 @@ public:
             for (size_t i = 1; i < children.size(); i++)
                 node = MakeOperator(name, std::move(node), std::move(children[i]));
         }
+        // Unary operators: parameters first, then exactly one child.
+        else if (name == "translate") {
+            Vector t = Vec();
+            node = std::make_unique<TranslateBlob>(t, Child(name));
+        }
+        else if (name == "rotatex") {
+            double degrees = Num();
+            node = std::make_unique<RotateXBlob>(degrees, Child(name));
+        }
+        else if (name == "rotatey") {
+            double degrees = Num();
+            node = std::make_unique<RotateYBlob>(degrees, Child(name));
+        }
+        else if (name == "rotatez") {
+            double degrees = Num();
+            node = std::make_unique<RotateZBlob>(degrees, Child(name));
+        }
+        else if (name == "scale") {
+            Vector f = Vec();
+            if (f[0] == 0.0 || f[1] == 0.0 || f[2] == 0.0)
+                Error("scale factors must not be 0");
+            node = std::make_unique<ScaleBlob>(f, Child(name));
+        }
+        else if (name == "twist") {
+            double rate = Num();
+            node = std::make_unique<TwistBlob>(rate, Child(name));
+        }
+        else if (name == "taper") {
+            double rate = Num();
+            node = std::make_unique<TaperBlob>(rate, Child(name));
+        }
+        else if (name == "bend") {
+            double rate = Num();
+            node = std::make_unique<BendBlob>(rate, Child(name));
+        }
         else {
             Error("unknown node '" + name + "'");
         }
@@ -66,6 +102,16 @@ public:
 private:
     const std::string& s;
     size_t pos = 0;
+
+    // The single child of a unary operator, which must be followed by ')'.
+    std::unique_ptr<Node> Child(const std::string& name) {
+        std::unique_ptr<Node> child = ParseNode();
+        if (!Peek(')')) {
+            if (pos >= s.size()) Error("missing ')' to close " + name);
+            Error(name + " takes exactly one child");
+        }
+        return child;
+    }
 
     static bool IsOperator(const std::string& name) {
         return name == "union" || name == "blend" || name == "difference" || name == "intersection";
