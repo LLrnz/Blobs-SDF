@@ -2,14 +2,14 @@
 #include "Blob.h"
 #include <memory>
 
-class OperatorBlob: public Node{
+class BinaryOpBlob: public Node{
     protected:
         std::unique_ptr<Node> left_child, right_child;
-        OperatorBlob(std::unique_ptr<Node> l, std::unique_ptr<Node> r)
+        BinaryOpBlob(std::unique_ptr<Node> l, std::unique_ptr<Node> r)
         : left_child(std::move(l)), right_child(std::move(r)) {}
 };
 
-class BlendBlob: public OperatorBlob{
+class BlendBlob: public BinaryOpBlob{
     public:
         float Evaluate(const Vector& p);
         float GetLipschitzBound();
@@ -18,7 +18,7 @@ class BlendBlob: public OperatorBlob{
 
 };
 
-class UnionBlob: public OperatorBlob{
+class UnionBlob: public BinaryOpBlob{
     public:
         float Evaluate(const Vector& p);
         float GetLipschitzBound();
@@ -26,7 +26,7 @@ class UnionBlob: public OperatorBlob{
         UnionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
 };
 
-class DifferenceBlob: public OperatorBlob{
+class DifferenceBlob: public BinaryOpBlob{
     public:
         float Evaluate(const Vector& p);
         float GetLipschitzBound();
@@ -34,7 +34,7 @@ class DifferenceBlob: public OperatorBlob{
         DifferenceBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
 };
 
-class IntersectionBlob: public OperatorBlob{
+class IntersectionBlob: public BinaryOpBlob{
     public:
         float Evaluate(const Vector& p);
         float GetLipschitzBound();

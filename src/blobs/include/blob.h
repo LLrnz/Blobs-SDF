@@ -2,6 +2,7 @@
 #include "../../base/include/mathematics.h"
 #include <vector>
 #include "../../include/Node.h"
+#include "raylib.h"
 
 #include <cmath>
 
@@ -25,6 +26,7 @@ inline double wyvill(double dist_sqrd, double radius)
 class Blob: public Node{
     protected:
         float potential;
+        Color color;
 
     public:
         Blob(float potential);
@@ -55,4 +57,32 @@ class CapsuleBlob: public Blob{
         void  ComputeBBox();
 
 };
+
+// class PlaneBlob: public Blob{
+//     protected:
+//         Vector c, normal;
+
+//     public:
+//         PlaneBlob(Vector c, Vector normal, float potential);
+
+//         float Distance(const Vector& p);
+//         float GetLipschitzBound();
+//         void  ComputeBBox();
+
+// };
+
+// class TorusBlob: public Blob{
+//     protected:
+//         Vector c;
+//         float r, R;
+
+//     public:
+//         TorusBlob(Vector c, float r, float R, float potential);
+
+//         float Distance(const Vector& p);
+//         float GetLipschitzBound();
+//         void  ComputeBBox();
+
+// };
+
 

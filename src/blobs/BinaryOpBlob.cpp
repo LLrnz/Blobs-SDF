@@ -1,11 +1,11 @@
-#include "include/OperatorBlob.h"
+#include "include/BinaryOpBlob.h"
 #include "../base/include/mathematics.h"
 #include "../base/include/implicits.h"
 #include <csignal>
 #include <memory>
 
 BlendBlob::BlendBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right)
-    : OperatorBlob(std::move(left), std::move(right)) {}
+    : BinaryOpBlob(std::move(left), std::move(right)) {}
 
 float BlendBlob::Evaluate(const Vector& p){
     return left_child->Evaluate(p) + right_child->Evaluate(p);
@@ -21,7 +21,7 @@ void  BlendBlob::ComputeBBox(){
 }
 
 
-UnionBlob::UnionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right) : OperatorBlob(std::move(left), std::move(right)) {}
+UnionBlob::UnionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right) : BinaryOpBlob(std::move(left), std::move(right)) {}
 
 float UnionBlob::Evaluate(const Vector& p){
     return Math::Max(left_child->Evaluate(p), right_child->Evaluate(p));
@@ -38,7 +38,7 @@ void  UnionBlob::ComputeBBox(){
 }
 
 
-DifferenceBlob::DifferenceBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right) : OperatorBlob(std::move(left), std::move(right)) {}
+DifferenceBlob::DifferenceBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right) : BinaryOpBlob(std::move(left), std::move(right)) {}
 
 float DifferenceBlob::Evaluate(const Vector& p){
     return Math::Min(left_child->Evaluate(p), 2* AnalyticScalarField::threshold - right_child->Evaluate(p));
@@ -56,7 +56,7 @@ void  DifferenceBlob::ComputeBBox(){
 }
 
 
-IntersectionBlob::IntersectionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right) : OperatorBlob(std::move(left), std::move(right)) {}
+IntersectionBlob::IntersectionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right) : BinaryOpBlob(std::move(left), std::move(right)) {}
 
 float IntersectionBlob::Evaluate(const Vector& p){
     return Math::Min(left_child->Evaluate(p), right_child->Evaluate(p));
