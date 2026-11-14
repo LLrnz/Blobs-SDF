@@ -76,7 +76,7 @@ $(BIN_PATH)/$(BIN_NAME): $(OBJECTS)
 # Test executable
 $(BIN_PATH)/$(TEST_NAME): $(TEST_OBJECTS) $(APP_OBJECTS_FOR_TESTS)
 	@echo "Linking tests: $@"
-	$(CXX) $(TEST_OBJECTS) $(APP_OBJECTS_FOR_TESTS) -o $@ $(TEST_LIBS)
+	$(CXX) $(TEST_OBJECTS) $(APP_OBJECTS_FOR_TESTS) -o $@ $(TEST_LIBS) $(RAYLIB_LIBS)
 
 # Header changes trigger recompilation of affected source files.
 $(OBJECTS) $(TEST_OBJECTS): $(HEADERS)

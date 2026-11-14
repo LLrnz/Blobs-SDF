@@ -24,6 +24,10 @@
 #include "../include/rlights.h"
 #include "raymath.h"
 #include "blobs/include/Blob.h"
+#include "blobs/include/BlobParser.h"
+#include "gui/include/TreeEditor.h"
+#include <exception>
+#include <string>
 
 
 #define NUM_MODELS  9               // Parametric 3d shapes to generate
@@ -46,8 +50,12 @@ int main(void)
     SetTraceLogLevel(LOG_ALL);
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth = 800;
-    const int screenHeight = 450;
+    const int screenWidth = 1600;
+    const int screenHeight = 900;
+
+    // HIGHDPI renders at the display's native resolution (sharp on Retina),
+    // MSAA smooths mesh edges, RESIZABLE lets you drag the window bigger.
+    SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
 
     InitWindow(screenWidth, screenHeight, "raylib [models] example - mesh generation");
 
@@ -55,17 +63,6 @@ int main(void)
     Image checked = GenImageChecked(2, 2, 1, 1, BLUE, PURPLE);
     Texture2D texture = LoadTextureFromImage(checked);
     UnloadImage(checked);
-
-    CapsuleBlob* s1 = new CapsuleBlob(Vector(1,0,0), Vector(1,1.5,0), 0.7, 0.5);
-    SphereBlob* s2 = new SphereBlob(Vector(0,1,0), 0.7, 0.5);
-    UnionBlob* u1 = new UnionBlob(s1, s2);
-
-
-    AnalyticScalarField implicit = AnalyticScalarField(u1);
-    TMesh mesh;
-    implicit.Polygonize(31, mesh, Box(2.0));
-    Model models = LoadModelFromMesh(GenMeshCustom(mesh));
-    models.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = PURPLE;
 
     Shader shader = LoadShader("res/shaders/shader2BG_frag.glsl", "res/shaders/shader2BG_vert.glsl");
     printf("Shader ID: %u\n", shader.id);
@@ -89,7 +86,45 @@ int main(void)
     shader.locs[SHADER_LOC_COLOR_DIFFUSE] =
         GetShaderLocation(shader, "colDiffuse");
 
-    models.materials[0].shader = shader;
+    // Blob tree editor: the text is parsed into a tree and polygonized on "Generate"
+    TreeEditor editor(
+        "union(\n"
+        "  capsule(1 0 0, 1 1.5 0, 0.7, 0.5),\n"
+        "  sphere(0 1 0, 0.7, 0.5)\n"
+        ")\n");
+
+    Model model = { 0 };    // empty until the first successful generate
+
+    auto generate = [&]() {
+        try {
+            BlobTree tree = ParseBlobTree(editor.GetText());
+
+            AnalyticScalarField implicit(tree.root);
+            TMesh mesh;
+            implicit.Polygonize(31, mesh, Box(2.0));
+
+            if (mesh.Triangles() == 0) {
+                editor.SetStatus("No surface inside the box [-2, 2]^3", true);
+                return;
+            }
+
+            // UnloadModel frees the mesh and material maps but not the shared shader
+            UnloadModel(model);
+            model = LoadModelFromMesh(GenMeshCustom(mesh));
+            model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = PURPLE;
+            model.materials[0].shader = shader;
+
+            editor.SetStatus("Generated " + std::to_string(mesh.Triangles()) + " triangles", false);
+        }
+        catch (const std::exception& e) {
+            editor.SetStatus(e.what(), true);
+        }
+        catch (const char* e) {     // unimplemented operator methods throw C strings
+            editor.SetStatus(e, true);
+        }
+    };
+    editor.LoadFont();
+    generate();
 
 
     // Define the camera to look into our 3d world (position, target, up vector)
@@ -102,7 +137,7 @@ int main(void)
 
     int cameraMode = CAMERA_FIRST_PERSON;
 
-    DisableCursor();                    // Limit cursor to relative movement inside the window
+    // The editor starts focused, so the cursor stays free until the user clicks the 3D view
     
     // Model drawing position
     Vector3 position = { 0.0f, 0.0f, 0.0f };
@@ -116,6 +151,32 @@ int main(void)
     {
         // Update
         //----------------------------------------------------------------------------------
+        // Two input modes:
+        //  - editing: cursor is free, keys go to the text box, camera is still
+        //  - camera:  cursor is captured, WASD + mouse move the camera
+        // Clicking the 3D view (or TAB) enters camera mode; TAB returns to the editor.
+        bool toCamera = editor.focused &&
+            (IsKeyPressed(KEY_TAB) ||
+             (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !editor.Contains(GetMousePosition())));
+        bool toEditor = !editor.focused && IsKeyPressed(KEY_TAB);
+
+        if (toCamera)
+        {
+            editor.focused = false;
+            DisableCursor();
+        }
+        else if (toEditor)
+        {
+            editor.focused = true;
+            EnableCursor();
+        }
+
+        if (editor.focused)
+        {
+            if (editor.Update()) generate();
+        }
+        else
+        {
         // Switch camera mode
         if (IsKeyPressed(KEY_ONE))
         {
@@ -173,6 +234,7 @@ int main(void)
         // Some default standard keyboard/mouse inputs are hardcoded to simplify use
         // For advanced camera controls, it's recommended to compute camera movement manually
         UpdateCamera(&camera, cameraMode);                  // Update camera
+        }
 
        
     
@@ -187,10 +249,12 @@ int main(void)
 
             BeginMode3D(camera);
 
-               DrawModel(models, position, 1.0f, WHITE);
+               DrawModel(model, position, 1.0f, WHITE);
                DrawGrid(10, 1.0);
 
             EndMode3D();
+
+            editor.Draw();
 
         EndDrawing();
         //----------------------------------------------------------------------------------
@@ -201,7 +265,9 @@ int main(void)
     UnloadTexture(texture); // Unload texture
 
     // Unload models data (GPU VRAM)
-    UnloadModel(models);
+    UnloadModel(model);
+    UnloadShader(shader);
+    editor.UnloadFont();
 
     CloseWindow();          // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
