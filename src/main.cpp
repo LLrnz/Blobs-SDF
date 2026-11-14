@@ -28,6 +28,8 @@
 #include "gui/include/TreeEditor.h"
 #include <exception>
 #include <string>
+#include <fstream>
+#include <sstream>
 
 
 #define NUM_MODELS  9               // Parametric 3d shapes to generate
@@ -41,6 +43,36 @@
 // Module Functions Declaration
 //------------------------------------------------------------------------------------
 static Mesh GenMeshCustom(TMesh& tmesh);    // Generate a simple triangle mesh from code
+
+// The editor text is saved here on exit and restored on the next start
+// (relative to the working directory, i.e. the project root when run as ./app).
+static const char* kSavedTreePath = "saved_tree.txt";
+
+// Expands a leading "~/" to the home directory.
+static std::string ExpandPath(const std::string& path)
+{
+    if (path.rfind("~/", 0) == 0)
+        if (const char* home = getenv("HOME")) return std::string(home) + path.substr(1);
+    return path;
+}
+
+static bool LoadTextFile(const std::string& path, std::string& text)
+{
+    std::ifstream in(ExpandPath(path));
+    if (!in) return false;
+    std::stringstream ss;
+    ss << in.rdbuf();
+    text = ss.str();
+    return true;
+}
+
+static bool SaveTextFile(const std::string& path, const std::string& text)
+{
+    std::ofstream out(ExpandPath(path));
+    if (!out) return false;
+    out << text;
+    return (bool)out;
+}
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -87,15 +119,19 @@ int main(void)
         GetShaderLocation(shader, "colDiffuse");
 
     // Blob tree editor: the text is parsed into a tree and polygonized on "Generate"
-    TreeEditor editor(
+    // Restore the text from the last session, or start from a default tree
+    std::string initialTree =
         "union(\n"
         "  capsule(1 0 0, 1 1.5 0, 0.7),\n"
         "  sphere(0 1 0, 0.7)\n"
-        ")\n");
+        ")\n";
+    LoadTextFile(kSavedTreePath, initialTree);
+    TreeEditor editor(initialTree);
 
     Model model = { 0 };    // empty until the first successful generate
 
-    auto generate = [&]() {
+    // Returns true if a new mesh was built
+    auto generate = [&]() -> bool {
         try {
             std::unique_ptr<Node> root = ParseBlobTree(editor.GetText());
 
@@ -104,8 +140,8 @@ int main(void)
             implicit.Polygonize(64, mesh, Box(4.0));
 
             if (mesh.Triangles() == 0) {
-                editor.SetStatus("No surface inside the box [-2, 2]^3", true);
-                return;
+                editor.SetStatus("No surface inside the box [-4, 4]^3", true);
+                return false;
             }
 
             // UnloadModel frees the mesh and material maps but not the shared shader
@@ -115,12 +151,36 @@ int main(void)
             model.materials[0].shader = shader;
 
             editor.SetStatus("Generated " + std::to_string(mesh.Triangles()) + " triangles", false);
+            return true;
         }
         catch (const std::exception& e) {
             editor.SetStatus(e.what(), true);
         }
         catch (const char* e) {     // unimplemented operator methods throw C strings
             editor.SetStatus(e, true);
+        }
+        return false;
+    };
+
+    // Loads a tree file into the editor and generates it
+    auto loadFile = [&](const std::string& path) {
+        std::string text;
+        if (!LoadTextFile(path, text)) {
+            editor.SetStatus("Could not open " + path, true);
+            return;
+        }
+        editor.SetText(text);
+        editor.SetFilePath(path);
+        // Keep generate's error message if the file doesn't parse
+        if (generate()) editor.SetStatus(std::string("Loaded ") + GetFileName(path.c_str()), false);
+    };
+
+    auto saveFile = [&](const std::string& path) {
+        if (SaveTextFile(path, editor.GetText())) {
+            editor.SetFilePath(path);
+            editor.SetStatus(std::string("Saved ") + GetFileName(path.c_str()), false);
+        } else {
+            editor.SetStatus("Could not save to " + path, true);
         }
     };
     editor.LoadFont();
@@ -171,9 +231,23 @@ int main(void)
             EnableCursor();
         }
 
+        // A file dropped on the window is loaded, whatever the mode
+        if (IsFileDropped())
+        {
+            FilePathList dropped = LoadDroppedFiles();
+            if (dropped.count > 0) loadFile(dropped.paths[0]);
+            UnloadDroppedFiles(dropped);
+        }
+
         if (editor.focused)
         {
-            if (editor.Update()) generate();
+            switch (editor.Update())
+            {
+                case EditorAction::Generate: generate(); break;
+                case EditorAction::Load:     loadFile(editor.ActionPath()); break;
+                case EditorAction::Save:     saveFile(editor.ActionPath()); break;
+                case EditorAction::None:     break;
+            }
         }
         else
         {
@@ -236,6 +310,9 @@ int main(void)
         UpdateCamera(&camera, cameraMode);                  // Update camera
         }
 
+        // ESC cancels the file prompt instead of closing the window
+        SetExitKey(editor.PromptOpen() ? KEY_NULL : KEY_ESCAPE);
+
        
     
 
@@ -268,6 +345,8 @@ int main(void)
     UnloadModel(model);
     UnloadShader(shader);
     editor.UnloadFont();
+    if (!SaveTextFile(kSavedTreePath, editor.GetText()))
+        TraceLog(LOG_WARNING, "Could not save the tree to %s", kSavedTreePath);
 
     CloseWindow();          // Close window and OpenGL context
     //--------------------------------------------------------------------------------------

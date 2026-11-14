@@ -30,8 +30,9 @@ const char* kHelp[] = {
     "sphere(cx cy cz, potential)",
     "capsule(ax ay az, bx by bz, potential)",
     "union | blend | difference | intersection(a, b, ...)",
-    "# comment     Ctrl/Cmd+Enter: generate",
+    "# comment    Ctrl/Cmd + Enter: generate, S: save, O: load",
     "Click the 3D view: move camera   TAB: back here",
+    "Drop a file on the window to load it",
 };
 constexpr int kHelpLines = sizeof(kHelp) / sizeof(kHelp[0]);
 
@@ -43,6 +44,24 @@ bool CtrlDown() {
 bool Pressed(int key) {
     return IsKeyPressed(key) || IsKeyPressedRepeat(key);
 }
+
+bool Clicked(Rectangle r) {
+    return IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(), r);
+}
+
+// Clipboard text reduced to what the editor can display.
+std::string ClipboardText(bool allowNewlines) {
+    std::string s;
+    if (const char* clip = GetClipboardText())
+        for (const char* p = clip; *p; p++)
+            if ((allowNewlines && *p == '\n') || (*p >= 32 && *p < 127)) s += *p;
+    return s;
+}
+
+constexpr float kButtonH = 36.0f;
+constexpr float kRowGap  = 8.0f;
+constexpr float kPromptH = 32.0f;
+constexpr float kStatusH = 22.0f;
 } // namespace
 
 TreeEditor::TreeEditor(std::string initialText)
@@ -81,23 +100,74 @@ void TreeEditor::SetStatus(std::string message, bool isError) {
     statusIsError = isError;
 }
 
+void TreeEditor::SetText(std::string newText) {
+    text = std::move(newText);
+    cursor = text.size();
+}
+
+// ---------------------------------------------------------------------------
+// Layout, from the bottom of the panel up: help text, status line,
+// file prompt row, button row. The text box fills the rest.
+// ---------------------------------------------------------------------------
+
 Rectangle TreeEditor::Panel() const {
     return { kPad, kPad, kPanelWidth, (float)GetScreenHeight() - 2 * kPad };
 }
 
-Rectangle TreeEditor::Button() const {
+Rectangle TreeEditor::GenerateButton() const {
     Rectangle p = Panel();
     float helpHeight = kHelpLines * kHelpLineH;
-    // button sits above the status line and the help text
-    return { p.x + kPad, p.y + p.height - kPad - helpHeight - 32 - 40, 130, 36 };
+    float y = p.y + p.height - kPad - helpHeight - kStatusH - kRowGap - kPromptH - kRowGap - kButtonH;
+    return { p.x + kPad, y, 130, kButtonH };
+}
+
+Rectangle TreeEditor::LoadButton() const {
+    Rectangle g = GenerateButton();
+    return { g.x + g.width + kRowGap, g.y, 100, kButtonH };
+}
+
+Rectangle TreeEditor::SaveButton() const {
+    Rectangle l = LoadButton();
+    return { l.x + l.width + kRowGap, l.y, 120, kButtonH };
+}
+
+Rectangle TreeEditor::PromptRow() const {
+    Rectangle p = Panel();
+    Rectangle g = GenerateButton();
+    return { p.x + kPad, g.y + g.height + kRowGap, p.width - 2 * kPad, kPromptH };
+}
+
+Rectangle TreeEditor::PromptCancel() const {
+    Rectangle r = PromptRow();
+    return { r.x + r.width - 70, r.y, 70, r.height };
+}
+
+Rectangle TreeEditor::PromptOk() const {
+    Rectangle c = PromptCancel();
+    return { c.x - kRowGap - 50, c.y, 50, c.height };
+}
+
+const char* TreeEditor::PromptLabel() const {
+    return prompt == PromptMode::Load ? "Load:" : "Save as:";
+}
+
+Rectangle TreeEditor::PromptInput() const {
+    Rectangle r = PromptRow();
+    Rectangle ok = PromptOk();
+    float labelW = Measure("Save as:", kStatusSize) + kRowGap;
+    return { r.x + labelW, r.y, ok.x - kRowGap - (r.x + labelW), r.height };
 }
 
 Rectangle TreeEditor::TextBox() const {
     Rectangle p = Panel();
-    Rectangle b = Button();
+    Rectangle b = GenerateButton();
     float top = p.y + kTitleSize + 2 * kPad;
     return { p.x + kPad, top, p.width - 2 * kPad, b.y - kPad - top };
 }
+
+// ---------------------------------------------------------------------------
+// Text editing helpers
+// ---------------------------------------------------------------------------
 
 void TreeEditor::Insert(const std::string& s) {
     text.insert(cursor, s);
@@ -156,34 +226,68 @@ size_t TreeEditor::IndexAtPoint(Vector2 p) const {
     return end;
 }
 
-bool TreeEditor::Update() {
-    bool generate = false;
+// ---------------------------------------------------------------------------
+// Input
+// ---------------------------------------------------------------------------
+
+void TreeEditor::OpenPrompt(PromptMode mode) {
+    prompt = mode;
+    promptText = filePath;
+}
+
+// While the file prompt is open it takes all keyboard input:
+// Enter / OK confirms, ESC / Cancel closes it.
+EditorAction TreeEditor::UpdatePrompt() {
+    EditorAction confirmed = prompt == PromptMode::Load ? EditorAction::Load : EditorAction::Save;
+
+    for (int c = GetCharPressed(); c != 0; c = GetCharPressed())
+        if (c >= 32 && c < 127) promptText += (char)c;
+
+    if (CtrlDown() && IsKeyPressed(KEY_V)) promptText += ClipboardText(false);
+    if (Pressed(KEY_BACKSPACE) && !promptText.empty()) promptText.pop_back();
+
+    bool confirm = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) || Clicked(PromptOk());
+    bool cancel  = IsKeyPressed(KEY_ESCAPE) || Clicked(PromptCancel());
+
+    if (cancel) {
+        prompt = PromptMode::None;
+        return EditorAction::None;
+    }
+    if (confirm && !promptText.empty()) {
+        prompt = PromptMode::None;
+        actionPath = promptText;
+        return confirmed;
+    }
+    return EditorAction::None;
+}
+
+EditorAction TreeEditor::Update() {
+    // The buttons work in both states; clicking Load/Save again switches the prompt
+    if (Clicked(GenerateButton())) { prompt = PromptMode::None; return EditorAction::Generate; }
+    if (Clicked(LoadButton()))     { OpenPrompt(PromptMode::Load); return EditorAction::None; }
+    if (Clicked(SaveButton()))     { OpenPrompt(PromptMode::Save); return EditorAction::None; }
+
+    if (PromptOpen()) return UpdatePrompt();
+
+    EditorAction action = EditorAction::None;
     Vector2 mouse = GetMousePosition();
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        if (CheckCollisionPointRec(mouse, Button())) generate = true;
-        else if (CheckCollisionPointRec(mouse, TextBox())) cursor = IndexAtPoint(mouse);
-    }
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, TextBox()))
+        cursor = IndexAtPoint(mouse);
 
-    // Typed characters (printable ASCII only: the default font has nothing else).
+    // Typed characters (printable ASCII only).
     for (int c = GetCharPressed(); c != 0; c = GetCharPressed()) {
         if (c >= 32 && c < 127) Insert(std::string(1, (char)c));
     }
 
     if (Pressed(KEY_ENTER) || Pressed(KEY_KP_ENTER)) {
-        if (CtrlDown()) generate = true;
+        if (CtrlDown()) action = EditorAction::Generate;
         else Insert("\n");
     }
 
-    if (CtrlDown() && IsKeyPressed(KEY_V)) {
-        const char* clip = GetClipboardText();
-        if (clip) {
-            std::string s;
-            for (const char* p = clip; *p; p++)
-                if (*p == '\n' || (*p >= 32 && *p < 127)) s += *p;
-            Insert(s);
-        }
-    }
+    if (CtrlDown() && IsKeyPressed(KEY_V)) Insert(ClipboardText(true));
+    if (CtrlDown() && IsKeyPressed(KEY_S)) OpenPrompt(PromptMode::Save);
+    if (CtrlDown() && IsKeyPressed(KEY_O)) OpenPrompt(PromptMode::Load);
 
     if (Pressed(KEY_BACKSPACE) && cursor > 0) text.erase(--cursor, 1);
     if (Pressed(KEY_DELETE) && cursor < text.size()) text.erase(cursor, 1);
@@ -194,7 +298,20 @@ bool TreeEditor::Update() {
     if (IsKeyPressed(KEY_HOME)) cursor = LineStart(cursor);
     if (IsKeyPressed(KEY_END)) cursor = LineEnd(cursor);
 
-    return generate;
+    return action;
+}
+
+// ---------------------------------------------------------------------------
+// Drawing
+// ---------------------------------------------------------------------------
+
+void TreeEditor::DrawButton(Rectangle r, const char* label, bool enabled) const {
+    bool hover = enabled && focused && CheckCollisionPointRec(GetMousePosition(), r);
+    DrawRectangleRec(r, hover ? SKYBLUE : LIGHTGRAY);
+    DrawRectangleLinesEx(r, 1, DARKGRAY);
+    float size = 18;
+    float tw = Measure(label, size);
+    Text(label, r.x + (r.width - tw) / 2, r.y + (r.height - size) / 2, size, DARKBLUE);
 }
 
 void TreeEditor::Draw() const {
@@ -202,6 +319,8 @@ void TreeEditor::Draw() const {
     DrawRectangleRec(panel, Fade(RAYWHITE, focused ? 0.92f : 0.6f));
     DrawRectangleLinesEx(panel, focused ? 2 : 1, focused ? DARKBLUE : GRAY);
     Text("Blob tree", panel.x + kPad, panel.y + kPad, kTitleSize, DARKGRAY);
+
+    bool blinkOn = (int)(GetTime() * 2) % 2 == 0;
 
     // Text box
     Rectangle box = TextBox();
@@ -220,8 +339,8 @@ void TreeEditor::Draw() const {
                            line[line.find_first_not_of(" \t")] == '#';
             Text(line, x, y, kFontSize, comment ? GRAY : BLACK);
 
-            // Blinking cursor
-            if (focused && cursor >= start && cursor <= end && (int)(GetTime() * 2) % 2 == 0) {
+            // Blinking cursor (hidden while the file prompt has the keyboard)
+            if (focused && !PromptOpen() && cursor >= start && cursor <= end && blinkOn) {
                 std::string before = text.substr(start, cursor - start);
                 float cx = x + Measure(before, kFontSize);
                 DrawRectangleRec({ cx, y - 1, 2, kFontSize + 2 }, MAROON);
@@ -234,17 +353,39 @@ void TreeEditor::Draw() const {
     }
     EndScissorMode();
 
-    // Button
-    Rectangle b = Button();
-    bool hover = focused && CheckCollisionPointRec(GetMousePosition(), b);
-    DrawRectangleRec(b, hover ? SKYBLUE : LIGHTGRAY);
-    DrawRectangleLinesEx(b, 1, DARKGRAY);
-    float tw = Measure("Generate", 20);
-    Text("Generate", b.x + (b.width - tw) / 2, b.y + (b.height - 20) / 2, 20, DARKBLUE);
+    // Buttons
+    DrawButton(GenerateButton(), "Generate", true);
+    DrawButton(LoadButton(), "Load...", true);
+    DrawButton(SaveButton(), "Save as...", true);
+
+    // File name prompt
+    if (PromptOpen()) {
+        Rectangle row = PromptRow();
+        Rectangle in = PromptInput();
+        Text(PromptLabel(), row.x, row.y + (row.height - kStatusSize) / 2, kStatusSize, DARKGRAY);
+
+        DrawRectangleRec(in, WHITE);
+        DrawRectangleLinesEx(in, 1, DARKBLUE);
+        BeginScissorMode((int)in.x, (int)in.y, (int)in.width, (int)in.height);
+        {
+            // Keep the end of a long path visible
+            float tw = Measure(promptText, kStatusSize);
+            float tx = std::min(in.x + 6, in.x + in.width - 8 - tw);
+            float ty = in.y + (in.height - kStatusSize) / 2;
+            Text(promptText, tx, ty, kStatusSize, BLACK);
+            if (focused && blinkOn)
+                DrawRectangleRec({ tx + tw + 1, ty - 1, 2, kStatusSize + 2 }, MAROON);
+        }
+        EndScissorMode();
+
+        DrawButton(PromptOk(), "OK", true);
+        DrawButton(PromptCancel(), "Cancel", true);
+    }
 
     // Status line
     if (!status.empty()) {
-        Text(status, panel.x + kPad, b.y + b.height + 10, kStatusSize,
+        Rectangle row = PromptRow();
+        Text(status, panel.x + kPad, row.y + row.height + kRowGap, kStatusSize,
              statusIsError ? RED : DARKGREEN);
     }
 

@@ -2,4 +2,4 @@ app
 build/
 include/raylib.h
 .DS_Store
-.vscode
+.vscodesaved_tree.txt
