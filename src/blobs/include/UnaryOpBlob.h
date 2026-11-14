@@ -69,14 +69,14 @@ class ScaleBlob: public UnaryOpBlob{
 };
 
 
-class TwistBlob: public UnaryOpBlob{
+class TwistYBlob: public UnaryOpBlob{
     private:
         double rate;    // radians per unit of y
     public:
         float Evaluate(const Vector& p);
         float GetLipschitzBound();
         void  ComputeBBox();
-        TwistBlob(double degreesPerUnit, std::unique_ptr<Node> child);
+        TwistYBlob(double degreesPerUnit, std::unique_ptr<Node> child);
 };
 
 

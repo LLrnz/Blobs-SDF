@@ -75,7 +75,7 @@ public:
         }
         else if (name == "twist") {
             double rate = Num();
-            node = std::make_unique<TwistBlob>(rate, Child(name));
+            node = std::make_unique<TwistYBlob>(rate, Child(name));
         }
         else if (name == "taper") {
             double rate = Num();
