@@ -4,6 +4,7 @@
 #include <vector>
 
 const double AnalyticScalarField::Epsilon = 1e-6;
+const double threshold = 0.5;
 
 /*!
 \brief Constructor.
@@ -19,7 +20,7 @@ AnalyticScalarField::AnalyticScalarField(Node* root)
 */
 double AnalyticScalarField::Value(const Vector& p) const
 {
-  return root->Evaluate(p);
+  return root->Evaluate(p) - threshold;
 }
 
 /*!

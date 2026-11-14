@@ -20,15 +20,13 @@ public:
         if (name == "sphere") {
             Vector c = Vec();
             float potential = Num();
-            float threshold = Num();
-            node = Make<SphereBlob>(c, potential, threshold);
+            node = Make<SphereBlob>(c, potential);
         }
         else if (name == "capsule") {
             Vector a = Vec();
             Vector b = Vec();
             float potential = Num();
-            float threshold = Num();
-            node = Make<CapsuleBlob>(a, b, potential, threshold);
+            node = Make<CapsuleBlob>(a, b, potential);
         }
         else if (IsOperator(name)) {
             std::vector<Node*> children;

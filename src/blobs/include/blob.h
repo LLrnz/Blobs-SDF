@@ -5,27 +5,29 @@
 
 #include <cmath>
 
-inline double gaussian(double x, double sigma)
+const int WYVILL_N = 3;
+
+inline double gaussian(double dist_sqrd, double radius)
 {
-    const double variance = sigma * sigma;
+    const double variance = radius * radius;
     constexpr double pi = 3.14159265358979323846;
 
-    return std::exp(-x * x / (2.0 * variance))
-           / std::sqrt(2.0 * pi * variance);
+    return std::exp(-dist_sqrd / (2.0 * variance));
+           /// std::sqrt(2.0 * pi * variance);
 }
 
-inline double wyvill(double dist_sqrd, int n)
+inline double wyvill(double dist_sqrd, double radius)
 {
-    return std::pow((1-dist_sqrd), n);
+    double val = std::max(0.0, 1.0 - dist_sqrd / (radius * radius));
+    return std::pow(val, WYVILL_N);
 }
 
 class Blob: public Node{
     protected:
         float potential;
-        float threshold;
 
     public:
-        Blob(float potential, float threshold);
+        Blob(float potential);
         float Evaluate(const Vector& p);
         virtual float Distance(const Vector& p) = 0;
 };
@@ -35,7 +37,7 @@ class SphereBlob: public Blob{
         Vector center;
     
     public:
-        SphereBlob(Vector center, float potential, float threshold);
+        SphereBlob(Vector center, float potential);
         float Distance(const Vector& p);
         float GetLipschitzBound();
         void  ComputeBBox();
@@ -44,11 +46,9 @@ class SphereBlob: public Blob{
 class CapsuleBlob: public Blob{
     protected:
         Vector a, b;
-        float potential;
-        float threshold;
 
     public:
-        CapsuleBlob(Vector a, Vector b, float potential, float threshold);
+        CapsuleBlob(Vector a, Vector b, float potential);
 
         float Distance(const Vector& p);
         float GetLipschitzBound();

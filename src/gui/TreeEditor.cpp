@@ -27,8 +27,8 @@ const char* kFontCandidates[] = {
 };
 
 const char* kHelp[] = {
-    "sphere(cx cy cz, potential, threshold)",
-    "capsule(ax ay az, bx by bz, potential, threshold)",
+    "sphere(cx cy cz, potential)",
+    "capsule(ax ay az, bx by bz, potential)",
     "union | blend | difference | intersection(a, b, ...)",
     "# comment     Ctrl/Cmd+Enter: generate",
     "Click the 3D view: move camera   TAB: back here",

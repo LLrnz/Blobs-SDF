@@ -3,21 +3,19 @@
 #include "../include/MoreMath.h"
 #include <algorithm>
 
-Blob::Blob(float potential, float threshold){
+Blob::Blob(float potential){
     this->potential = potential;
-    this->threshold = threshold;
 }
 
 float Blob::Evaluate(const Vector& p){
     float v =0;
-    v += gaussian(Distance(p), potential);
+    v += wyvill(Distance(p), potential);
     
-    v -= threshold;
     return v;
 }
 
 SphereBlob::SphereBlob(Vector center,
-        float potential, float threshold):Blob(potential, threshold){
+        float potential):Blob(potential){
             this->center = center;
         }
         
@@ -37,7 +35,7 @@ void  SphereBlob::ComputeBBox(){
 }
 
 
-CapsuleBlob::CapsuleBlob(Vector a, Vector b, float potential, float threshold):Blob(potential, threshold){
+CapsuleBlob::CapsuleBlob(Vector a, Vector b, float potential):Blob(potential){
             this->a = a;
             this->b = b;
         }
@@ -48,7 +46,7 @@ float  CapsuleBlob::Distance(const Vector& p){
     Vector pa = p - a;
     Vector ba = b - a;
     float h = std::clamp( MoreVector::Dot(pa,ba)/MoreVector::Dot(ba,ba), 0.0f, 1.0f );
-    return SquaredNorm( pa - ba*h ) - potential;
+    return SquaredNorm( pa - ba*h );
 }
 
 float  CapsuleBlob::GetLipschitzBound(){

@@ -89,8 +89,8 @@ int main(void)
     // Blob tree editor: the text is parsed into a tree and polygonized on "Generate"
     TreeEditor editor(
         "union(\n"
-        "  capsule(1 0 0, 1 1.5 0, 0.7, 0.5),\n"
-        "  sphere(0 1 0, 0.7, 0.5)\n"
+        "  capsule(1 0 0, 1 1.5 0, 0.7),\n"
+        "  sphere(0 1 0, 0.7)\n"
         ")\n");
 
     Model model = { 0 };    // empty until the first successful generate
@@ -101,7 +101,7 @@ int main(void)
 
             AnalyticScalarField implicit(tree.root);
             TMesh mesh;
-            implicit.Polygonize(31, mesh, Box(2.0));
+            implicit.Polygonize(64, mesh, Box(4.0));
 
             if (mesh.Triangles() == 0) {
                 editor.SetStatus("No surface inside the box [-2, 2]^3", true);
