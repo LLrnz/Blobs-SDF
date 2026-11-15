@@ -44,7 +44,7 @@ public:
     void SetFilePath(std::string path) { filePath = std::move(path); }
 
 private:
-    enum class PromptMode { None, Load, Save };
+    enum class PromptMode { None, Load, Save, Random };
 
     std::string text;
     // The selection is [min(anchor, cursor), max(anchor, cursor)); empty when equal.
@@ -64,6 +64,7 @@ private:
     std::string promptText;
     std::string filePath = "my_tree.txt";
     std::string actionPath;
+    int randomCount = 10;           // last blob count used by "Random..."
 
     // Drawing helpers
     float Measure(const std::string& s, float size) const;
@@ -77,6 +78,7 @@ private:
     Rectangle GenerateButton() const;
     Rectangle LoadButton() const;
     Rectangle SaveButton() const;
+    Rectangle RandomButton() const;
     Rectangle PromptRow() const;
     Rectangle PromptInput() const;
     Rectangle PromptOk() const;
@@ -84,6 +86,7 @@ private:
     const char* PromptLabel() const;
 
     void OpenPrompt(PromptMode mode);
+    static std::string RandomTree(int count);   // blend of `count` random primitives
     EditorAction UpdatePrompt();
     void UpdateTextBox();
 

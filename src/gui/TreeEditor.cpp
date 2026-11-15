@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <utility>
 #include <vector>
 
@@ -27,7 +30,8 @@ constexpr float kInsertH  = 28.0f;     // all insert buttons must fit beside the
 constexpr float kInsertGap = 4.0f;
 
 constexpr double kDoubleClickTime = 0.35;
-constexpr size_t kMaxUndo = 500;        // undo steps kept
+constexpr size_t kMaxUndo = 500;
+constexpr int    kMaxRandomBlobs = 1000;  // upper limit for the "Random..." button        // undo steps kept
 
 // Glyphs are rasterized at this size and scaled down when drawn,
 // so text stays sharp on HiDPI (2x) screens.
@@ -53,7 +57,7 @@ const char* kHelp[] = {
     "Tab / Shift+Tab: indent    Double-click: select word",
     "Ctrl/Cmd + Z: undo, Shift+Z or Y: redo",
     "Click 3D view / ESC: camera (WASD, Space/Shift: up/down)",
-    "Drop a file to load it    F1: hide/show panel    F2: screenshot",
+    "Drop a file to load it  F1: panel  F2: screenshot  F3: bbox",
 };
 constexpr int kHelpLines = sizeof(kHelp) / sizeof(kHelp[0]);
 
@@ -193,6 +197,11 @@ Rectangle TreeEditor::SaveButton() const {
     return { l.x + l.width + kRowGap, l.y, 120, kButtonH };
 }
 
+Rectangle TreeEditor::RandomButton() const {
+    Rectangle s = SaveButton();
+    return { s.x + s.width + kRowGap, s.y, 120, kButtonH };
+}
+
 Rectangle TreeEditor::PromptRow() const {
     Rectangle p = Panel();
     Rectangle g = GenerateButton();
@@ -210,7 +219,11 @@ Rectangle TreeEditor::PromptOk() const {
 }
 
 const char* TreeEditor::PromptLabel() const {
-    return prompt == PromptMode::Load ? "Load:" : "Save as:";
+    switch (prompt) {
+        case PromptMode::Load:   return "Load:";
+        case PromptMode::Random: return "Blobs:";
+        default:                 return "Save as:";
+    }
 }
 
 Rectangle TreeEditor::PromptInput() const {
@@ -466,13 +479,63 @@ void TreeEditor::UnindentLines() {
 
 void TreeEditor::OpenPrompt(PromptMode mode) {
     prompt = mode;
-    promptText = filePath;
+    promptText = mode == PromptMode::Random ? std::to_string(randomCount) : filePath;
+}
+
+namespace {
+float RandomFloat(float lo, float hi) {
+    return lo + (hi - lo) * GetRandomValue(0, 1000000) / 1000000.0f;
+}
+
+std::string Fmt(float v) {
+    char buf[32];
+    std::snprintf(buf, sizeof buf, "%.2f", v);
+    return buf;
+}
+}
+
+// A blend of `count` random primitives (about 3/4 spheres, 1/4 short capsules), each
+// with a random color. The scatter grows with the cube root of the count, so the
+// density of blobs (and the size of the blended shape) stays reasonable for large counts.
+std::string TreeEditor::RandomTree(int count) {
+    float extent = 1.2f * std::cbrt((float)count);
+    auto point = [&]() {
+        return Fmt(RandomFloat(-extent, extent)) + " " +
+               Fmt(RandomFloat(-extent, extent)) + " " +
+               Fmt(RandomFloat(-extent, extent));
+    };
+
+    std::vector<std::string> blobs;
+    for (int i = 0; i < count; i++) {
+        std::string potential = Fmt(RandomFloat(0.5f, 1.2f));
+        if (GetRandomValue(0, 3) == 0) {
+            // Capsule: a second endpoint within one unit of the first
+            float a[3], b[3];
+            for (int k = 0; k < 3; k++) {
+                a[k] = RandomFloat(-extent, extent);
+                b[k] = a[k] + RandomFloat(-1.0f, 1.0f);
+            }
+            blobs.push_back("capsule(" + Fmt(a[0]) + " " + Fmt(a[1]) + " " + Fmt(a[2]) + ", " +
+                            Fmt(b[0]) + " " + Fmt(b[1]) + " " + Fmt(b[2]) + ", " +
+                            potential + ", " + RandomColor() + ")");
+        }
+        else {
+            blobs.push_back("sphere(" + point() + ", " + potential + ", " + RandomColor() + ")");
+        }
+    }
+
+    if (count == 1) return blobs[0] + "\n";   // blend needs at least two children
+    std::string tree = "# " + std::to_string(count) + " random blobs\nblend(\n";
+    for (int i = 0; i < count; i++)
+        tree += "\t" + blobs[i] + (i + 1 < count ? ",\n" : "\n");
+    return tree + ")\n";
 }
 
 // While the file prompt is open it takes all keyboard input:
 // Enter / OK confirms, ESC / Cancel closes it.
 EditorAction TreeEditor::UpdatePrompt() {
     EditorAction confirmed = prompt == PromptMode::Load ? EditorAction::Load : EditorAction::Save;
+    bool random = prompt == PromptMode::Random;
 
     if (!CtrlDown())
         for (int c = GetCharPressed(); c != 0; c = GetCharPressed())
@@ -487,6 +550,19 @@ EditorAction TreeEditor::UpdatePrompt() {
     if (cancel) {
         prompt = PromptMode::None;
         return EditorAction::None;
+    }
+    if (confirm && random) {
+        // The text is replaced by the random tree (undoable), then generated
+        char* end = nullptr;
+        long n = std::strtol(promptText.c_str(), &end, 10);
+        if (promptText.empty() || *end != '\0' || n < 1 || n > kMaxRandomBlobs) {
+            SetStatus("Enter a number of blobs between 1 and " + std::to_string(kMaxRandomBlobs), true);
+            return EditorAction::None;
+        }
+        prompt = PromptMode::None;
+        randomCount = (int)n;
+        SetText(RandomTree(randomCount));
+        return EditorAction::Generate;
     }
     if (confirm && !promptText.empty()) {
         prompt = PromptMode::None;
@@ -622,6 +698,7 @@ EditorAction TreeEditor::Update() {
     if (Clicked(GenerateButton())) { prompt = PromptMode::None; return EditorAction::Generate; }
     if (Clicked(LoadButton()))     { OpenPrompt(PromptMode::Load); return EditorAction::None; }
     if (Clicked(SaveButton()))     { OpenPrompt(PromptMode::Save); return EditorAction::None; }
+    if (Clicked(RandomButton()))   { OpenPrompt(PromptMode::Random); return EditorAction::None; }
 
     for (int i = 0; i < kInsertCount; i++) {
         if (Clicked(InsertButton(i))) {
@@ -721,6 +798,7 @@ void TreeEditor::Draw() const {
     DrawButton(GenerateButton(), "Generate", true);
     DrawButton(LoadButton(), "Load...", true);
     DrawButton(SaveButton(), "Save as...", true);
+    DrawButton(RandomButton(), "Random...", true);
 
     // File name prompt
     if (PromptOpen()) {

@@ -31,6 +31,8 @@
 #include <fstream>
 #include <sstream>
 #include <ctime>
+#include <chrono>
+#include <cstdio>
 
 
 #define NUM_MODELS  9               // Parametric 3d shapes to generate
@@ -48,7 +50,15 @@ static Mesh GenMeshCustom(TMesh& tmesh);    // Generate a simple triangle mesh f
 // The editor text is saved here on exit and restored on the next start
 // (relative to the working directory, i.e. the project root when run as ./app).
 static const char* kSavedTreePath = "saved_tree.txt";
-static const char* kScreenshotDir = "screenshots";   // F2 saves renders here
+static const char* kScreenshotDir = "screenshots";
+static const char* kPerfLogPath = "perf_log.csv";   // one line per successful generate
+static const int kGridResolution = 64;              // polygonization grid cells per axis
+
+// Milliseconds elapsed since t0
+static double MsSince(std::chrono::steady_clock::time_point t0)
+{
+    return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+}   // F2 saves renders here
 
 // Expands a leading "~/" to the home directory.
 static std::string ExpandPath(const std::string& path)
@@ -147,15 +157,23 @@ int main(void)
     // Returns true if a new mesh was built
     auto generate = [&]() -> bool {
         try {
+            // Timings of each stage, in milliseconds
+            auto tStart = std::chrono::steady_clock::now();
+            auto t0 = tStart;
             std::unique_ptr<Node> root = ParseBlobTree(editor.GetText());
+            double parseMs = MsSince(t0);
 
             AnalyticScalarField implicit(root.get());
+            t0 = std::chrono::steady_clock::now();
             BBox box = root->ComputeBBox();
+            double bboxMs = MsSince(t0);
             rootBox = { { (float)box.Min()[0], (float)box.Min()[1], (float)box.Min()[2] },
                         { (float)box.Max()[0], (float)box.Max()[1], (float)box.Max()[2] } };
             hasRootBox = true;
             TMesh mesh;
-            implicit.Polygonize(64, mesh, Box(box.Min(), box.Max()), 1e-4, true);   // true: per-vertex colors
+            t0 = std::chrono::steady_clock::now();
+            implicit.Polygonize(kGridResolution, mesh, Box(box.Min(), box.Max()), 1e-4, true);   // true: per-vertex colors
+            double polygonizeMs = MsSince(t0);   // field evaluation + marching cubes + vertex colors
 
             if (mesh.Triangles() == 0) {
                 editor.SetStatus("No surface inside the root bounding box", true);
@@ -163,13 +181,34 @@ int main(void)
             }
 
             // UnloadModel frees the mesh and material maps but not the shared shader
+            t0 = std::chrono::steady_clock::now();
             UnloadModel(model);
             model = LoadModelFromMesh(GenMeshCustom(mesh));
+            double uploadMs = MsSince(t0);       // conversion to a raylib mesh + GPU upload
+            double totalMs = MsSince(tStart);
             // The shader multiplies the vertex colors by this tint: WHITE keeps them as is
             model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
             model.materials[0].shader = shader;
 
-            editor.SetStatus("Generated " + std::to_string(mesh.Triangles()) + " triangles", false);
+            char perf[256];
+            std::snprintf(perf, sizeof perf, "Generated %d triangles in %.1f ms (polygonize %.1f, upload %.1f)",
+                          mesh.Triangles(), totalMs, polygonizeMs, uploadMs);
+            editor.SetStatus(perf, false);
+
+            // Full breakdown in the terminal and in the CSV log (header written on first use)
+            std::printf("[perf] parse %.3f ms | bbox %.3f ms | polygonize %.3f ms | upload %.3f ms | total %.3f ms | %d triangles, %d^3 grid\n",
+                        parseMs, bboxMs, polygonizeMs, uploadMs, totalMs, mesh.Triangles(), kGridResolution);
+            bool newLog = !FileExists(kPerfLogPath);
+            if (FILE* log = std::fopen(kPerfLogPath, "a")) {
+                if (newLog)
+                    std::fprintf(log, "timestamp,grid,triangles,parse_ms,bbox_ms,polygonize_ms,upload_ms,total_ms\n");
+                char stamp[32];
+                std::time_t now = std::time(nullptr);
+                std::strftime(stamp, sizeof stamp, "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+                std::fprintf(log, "%s,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f\n", stamp, kGridResolution, mesh.Triangles(),
+                             parseMs, bboxMs, polygonizeMs, uploadMs, totalMs);
+                std::fclose(log);
+            }
             return true;
         }
         catch (const std::exception& e) {
