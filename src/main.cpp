@@ -209,6 +209,8 @@ int main(void)
 
     // The editor starts focused, so the cursor stays free until the user clicks the 3D view
     
+    bool editorVisible = true;      // F1 toggles the editor panel
+
     // Model drawing position
     Vector3 position = { 0.0f, 0.0f, 0.0f };
 
@@ -230,6 +232,16 @@ int main(void)
             ((IsKeyPressed(KEY_ESCAPE) && !editor.PromptOpen()) ||
              (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !editor.Contains(GetMousePosition())));
         bool toEditor = !editor.focused && IsKeyPressed(KEY_ESCAPE);
+
+        // F1 shows / hides the editor panel. Hiding it switches to camera mode,
+        // showing it (or ESC while it is hidden) gives it the focus back.
+        if (IsKeyPressed(KEY_F1))
+        {
+            editorVisible = !editorVisible;
+            if (editorVisible) toEditor = !editor.focused;
+            else toCamera = editor.focused;
+        }
+        if (toEditor) editorVisible = true;
 
         if (toCamera)
         {
@@ -373,7 +385,7 @@ int main(void)
                 UnloadImage(image);
             }
 
-            editor.Draw();
+            if (editorVisible) editor.Draw();
 
         EndDrawing();
         //----------------------------------------------------------------------------------
