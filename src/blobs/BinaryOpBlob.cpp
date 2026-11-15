@@ -18,7 +18,9 @@ float BlendBlob::GetLipschitzBound(){
 }
 
 BBox  BlendBlob::ComputeBBox(){
-    return BBox::Union(left_child->ComputeBBox(), right_child->ComputeBBox());
+    BBox b = BBox::Union(left_child->ComputeBBox(), right_child->ComputeBBox());
+    bb = b;
+    return bb;
 
 }
 
@@ -41,7 +43,8 @@ float UnionBlob::GetLipschitzBound(){
 }
 
 BBox  UnionBlob::ComputeBBox(){
-    return BBox::Union(left_child->ComputeBBox(), right_child->ComputeBBox());
+    bb = BBox::Union(left_child->ComputeBBox(), right_child->ComputeBBox());
+    return bb;
 
 
 }
@@ -67,7 +70,8 @@ float DifferenceBlob::GetLipschitzBound(){
 }
 
 BBox  DifferenceBlob::ComputeBBox(){
-    return BBox::Difference(left_child->ComputeBBox(), right_child->ComputeBBox());
+    bb = BBox::Difference(left_child->ComputeBBox(), right_child->ComputeBBox());
+    return bb;
 
 }
 
@@ -92,7 +96,8 @@ float IntersectionBlob::GetLipschitzBound(){
 }
 
 BBox  IntersectionBlob::ComputeBBox(){
-    return BBox::Intersection(left_child->ComputeBBox(), right_child->ComputeBBox());
+    bb = BBox::Intersection(left_child->ComputeBBox(), right_child->ComputeBBox());
+    return bb;
 }
 
 Color IntersectionBlob::EvaluateColor(const Vector& p){

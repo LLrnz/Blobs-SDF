@@ -44,7 +44,8 @@ float TranslateBlob::GetLipschitzBound(){
 }
 
 BBox  TranslateBlob::ComputeBBox(){
-    return child->ComputeBBox()+t;
+    bb = child->ComputeBBox()+t;
+    return bb;
 }
 
 
@@ -73,7 +74,8 @@ float RotateXBlob::GetLipschitzBound(){
 //__________________________
 
 BBox  RotateXBlob::ComputeBBox(){
-    return child->ComputeBBox().Transformed(rot.Transposed());
+    bb = child->ComputeBBox().Transformed(rot.Transposed());
+    return bb;
 }
 
 RotateYBlob::RotateYBlob(double degrees, std::unique_ptr<Node> child)
@@ -92,7 +94,8 @@ float RotateYBlob::GetLipschitzBound(){
 }
 
 BBox  RotateYBlob::ComputeBBox(){
-    return child->ComputeBBox().Transformed(rot.Transposed());
+    bb = child->ComputeBBox().Transformed(rot.Transposed());
+    return bb;
 }
 
 
@@ -115,7 +118,8 @@ float RotateZBlob::GetLipschitzBound(){
 }
 
 BBox  RotateZBlob::ComputeBBox(){
-    return child->ComputeBBox().Transformed(rot.Transposed());
+    bb = child->ComputeBBox().Transformed(rot.Transposed());
+    return bb;
 }
 
 
@@ -138,7 +142,8 @@ float ScaleBlob::GetLipschitzBound(){
 
 BBox  ScaleBlob::ComputeBBox(){
     BBox b = child->ComputeBBox();
-    return BBox::FromCorners(MoreVector::MultEach(b.Min(), s), MoreVector::MultEach(b.Max(), s));
+    bb = BBox::FromCorners(MoreVector::MultEach(b.Min(), s), MoreVector::MultEach(b.Max(), s));
+    return bb;
 }
 
 
@@ -168,7 +173,8 @@ BBox  TwistYBlob::ComputeBBox(){
     for (double x : { b.Min()[0], b.Max()[0] })
         for (double z : { b.Min()[2], b.Max()[2] })
             r = std::max(r, std::sqrt(x*x + z*z));
-    return BBox(Vector(-r, b.Min()[1], -r), Vector(r, b.Max()[1], r));
+    bb = BBox(Vector(-r, b.Min()[1], -r), Vector(r, b.Max()[1], r));
+    return bb;
 }
 
 
@@ -205,7 +211,8 @@ BBox  TaperYBlob::ComputeBBox(){
         minest[axis] = std::min(std::min(c[0], c[1]), std::min(c[2], c[3]));
         maxest[axis] = std::max(std::max(c[0], c[1]), std::max(c[2], c[3]));
     }
-    return BBox(minest, maxest);
+    bb = BBox(minest, maxest);
+    return bb;
 }
 
 
@@ -235,7 +242,8 @@ BBox  BendBlob::ComputeBBox(){
     for (double x : { b.Min()[0], b.Max()[0] })
         for (double y : { b.Min()[1], b.Max()[1] })
             r = std::max(r, std::sqrt(x*x + y*y));
-    return BBox(Vector(-r, -r, b.Min()[2]), Vector(r, r, b.Max()[2]));
+    bb = BBox(Vector(-r, -r, b.Min()[2]), Vector(r, r, b.Max()[2]));
+    return bb;
 }
 
 
@@ -260,7 +268,8 @@ float RevolutionizeYBlob::GetLipschitzBound(){
 BBox  RevolutionizeYBlob::ComputeBBox(){
     BBox b = child->ComputeBBox();
     double r = std::max(0.0, b.Max()[0]);
-    return BBox(Vector(-r, b.Min()[1], -r), Vector(r, b.Max()[1], r));
+    bb = BBox(Vector(-r, b.Min()[1], -r), Vector(r, b.Max()[1], r));
+    return bb;
 }
 
 
