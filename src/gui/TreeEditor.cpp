@@ -202,6 +202,13 @@ Rectangle TreeEditor::RandomButton() const {
     return { s.x + s.width + kRowGap, s.y, 120, kButtonH };
 }
 
+Rectangle TreeEditor::AccelerateCheckbox() const {
+    Rectangle r = RandomButton();
+    Rectangle p = Panel();
+    float x = r.x + r.width + kRowGap;
+    return { x, r.y, p.x + p.width - kPad - x, kButtonH };
+}
+
 Rectangle TreeEditor::PromptRow() const {
     Rectangle p = Panel();
     Rectangle g = GenerateButton();
@@ -699,6 +706,7 @@ EditorAction TreeEditor::Update() {
     if (Clicked(LoadButton()))     { OpenPrompt(PromptMode::Load); return EditorAction::None; }
     if (Clicked(SaveButton()))     { OpenPrompt(PromptMode::Save); return EditorAction::None; }
     if (Clicked(RandomButton()))   { OpenPrompt(PromptMode::Random); return EditorAction::None; }
+    if (Clicked(AccelerateCheckbox())) { accelerate = !accelerate; return EditorAction::Generate; }
 
     for (int i = 0; i < kInsertCount; i++) {
         if (Clicked(InsertButton(i))) {
@@ -734,6 +742,18 @@ void TreeEditor::DrawButton(Rectangle r, const char* label, bool enabled) const 
     float size = 18;
     float tw = Measure(label, size);
     Text(label, r.x + (r.width - tw) / 2, r.y + (r.height - size) / 2, size, DARKBLUE);
+}
+
+void TreeEditor::DrawCheckbox(Rectangle r, const char* label, bool checked) const {
+    bool hover = focused && CheckCollisionPointRec(GetMousePosition(), r);
+    float side = 20;
+    Rectangle box = { r.x, r.y + (r.height - side) / 2, side, side };
+    DrawRectangleRec(box, hover ? SKYBLUE : WHITE);
+    DrawRectangleLinesEx(box, 1, DARKGRAY);
+    if (checked)
+        DrawRectangleRec({ box.x + 4, box.y + 4, side - 8, side - 8 }, DARKBLUE);
+    float size = 18;
+    Text(label, box.x + side + 6, r.y + (r.height - size) / 2, size, DARKBLUE);
 }
 
 void TreeEditor::Draw() const {
@@ -799,6 +819,7 @@ void TreeEditor::Draw() const {
     DrawButton(LoadButton(), "Load...", true);
     DrawButton(SaveButton(), "Save as...", true);
     DrawButton(RandomButton(), "Random...", true);
+    DrawCheckbox(AccelerateCheckbox(), "Accel", accelerate);
 
     // File name prompt
     if (PromptOpen()) {

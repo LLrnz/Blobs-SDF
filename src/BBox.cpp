@@ -4,7 +4,7 @@
 BBox::BBox(Vector left_down, Vector right_up)
     : min(left_down), max(right_up) {}
 
-bool BBox::isIn(Vector& p){
+bool BBox::isIn(const Vector& p) const{
     for (int i = 0; i < 3; i++){
         if (p[i] < min[i] || p[i] > max[i])
             return false;

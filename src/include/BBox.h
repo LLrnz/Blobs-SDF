@@ -8,7 +8,7 @@ class BBox{
 
     public:
         BBox(Vector left_down, Vector right_up);
-        bool isIn(Vector& p);
+        bool isIn(const Vector& p) const;
 
         static inline BBox Union(BBox a, BBox b){
             Vector minest = Vector::Min(a.min, b.min);

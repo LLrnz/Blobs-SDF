@@ -18,36 +18,44 @@ class BinaryOpBlob: public Node{
 class BlendBlob: public BinaryOpBlob{
     public:
         float Evaluate(const Vector& p);
+        float EvalPruned(const Vector& p);
         float GetLipschitzBound();
         BBox      ComputeBBox();
         BlendBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
         Color EvaluateColor(const Vector& p);
+        Color EvalColorIfIn(const Vector& p);
 
 };
 
 class UnionBlob: public BinaryOpBlob{
     public:
         float Evaluate(const Vector& p);
+        float EvalPruned(const Vector& p);
         float GetLipschitzBound();
         BBox    ComputeBBox();
         UnionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
         Color EvaluateColor(const Vector& p);
+        Color EvalColorIfIn(const Vector& p);
 };
 
 class DifferenceBlob: public BinaryOpBlob{
     public:
         float Evaluate(const Vector& p);
+        float EvalPruned(const Vector& p);
         float GetLipschitzBound();
         BBox    ComputeBBox();
         DifferenceBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
         Color EvaluateColor(const Vector& p);
+        Color EvalColorIfIn(const Vector& p);
 };
 
 class IntersectionBlob: public BinaryOpBlob{
     public:
         float Evaluate(const Vector& p);
+        float EvalPruned(const Vector& p);
         float GetLipschitzBound();
         BBox    ComputeBBox();
         IntersectionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
         Color EvaluateColor(const Vector& p);
+        Color EvalColorIfIn(const Vector& p);
 };

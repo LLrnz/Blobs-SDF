@@ -52,6 +52,11 @@ float Blob::Evaluate(const Vector& p){
     return v;
 }
 
+float Blob::EvalPruned(const Vector& p){
+    return Evaluate(p);
+}
+
+
 SphereBlob::SphereBlob(Vector center,
         float potential, Color col):Blob(potential, col){
             this->center = center;            
@@ -77,6 +82,10 @@ BBox  SphereBlob::ComputeBBox(){
 }
 
 Color SphereBlob::EvaluateColor(const Vector& p){
+    return color;
+}
+
+Color SphereBlob::EvalColorIfIn(const Vector& p){
     return color;
 }
 
@@ -111,5 +120,9 @@ BBox CapsuleBlob::ComputeBBox(){
 }
 
 Color CapsuleBlob::EvaluateColor(const Vector& p){
+    return color;
+}
+
+Color CapsuleBlob::EvalColorIfIn(const Vector& p){
     return color;
 }

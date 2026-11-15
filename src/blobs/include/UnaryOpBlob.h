@@ -9,7 +9,9 @@ class UnaryOpBlob: public Node{
     protected:
         std::unique_ptr<Node> child;
         float Evaluate(const Vector& p);
+        float EvalPruned(const Vector& p);
         Color EvaluateColor(const Vector& p);
+        Color EvalColorIfIn(const Vector& p);
         virtual Vector Transform(const Vector& p)=0;
         UnaryOpBlob(std::unique_ptr<Node> child)
         : child(std::move(child)) {}

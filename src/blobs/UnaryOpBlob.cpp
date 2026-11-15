@@ -22,8 +22,17 @@ Color UnaryOpBlob::EvaluateColor(const Vector& p){
     return child->EvaluateColor(Transform(p));
 }
 
+Color UnaryOpBlob::EvalColorIfIn(const Vector& p){
+    return child->EvalColorIfIn(Transform(p));
+}
+
+
 float UnaryOpBlob::Evaluate(const Vector& p){
     return child->Evaluate(Transform(p));
+}
+
+float UnaryOpBlob::EvalPruned(const Vector& p){
+    return child->EvalIfIn(Transform(p));
 }
 
 

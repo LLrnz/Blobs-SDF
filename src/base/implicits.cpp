@@ -23,6 +23,12 @@ double AnalyticScalarField::Value(const Vector& p) const
   return root->Evaluate(p) - threshold;
 }
 
+double AnalyticScalarField::ValueIfIn(const Vector& p) const
+{
+  evaluations++;
+  return root->EvalIfIn(p) - threshold;
+}
+
 /*!
 \brief Compute the polygonal mesh approximating the implicit surface.
 
@@ -247,6 +253,229 @@ void AnalyticScalarField::Polygonize(int n, TMesh& g, const Box& box, const doub
   if(colored){
     for(Vector& vert : vertex){
       color.push_back(root->EvaluateColor(vert));
+    }
+  }
+
+  g = TMesh(vertex, normal, triangle, normals, color);
+}
+
+
+void AnalyticScalarField::PolygonizeWithBVH(int n, TMesh& g, const Box& box, const double& epsilon, bool colored) const
+{
+  std::vector<Vector> vertex;
+  std::vector<Vector> normal;
+  std::vector<Color> color;
+
+  std::vector<int> triangle;
+
+  vertex.reserve(20000);
+  normal.reserve(20000);
+  triangle.reserve(20000);
+
+  int nv = 0;
+  const int nx = n;
+  const int ny = n;
+  const int nz = n;
+
+  Box clipped = box;
+
+  // Clamped integer values
+  const int nax = 0;
+  const int nbx = nx;
+  const int nay = 0;
+  const int nby = ny;
+  const int naz = 0;
+  const int nbz = nz;
+
+  const int size = nx * ny;
+
+  // Intensities
+  double* a = new double[size];
+  double* b = new double[size];
+
+  // Vertex
+  Vector* u = new Vector[size];
+  Vector* v = new Vector[size];
+
+  // Edges
+  int* eax = new int[size];
+  int* eay = new int[size];
+  int* ebx = new int[size];
+  int* eby = new int[size];
+  int* ez = new int[size];
+
+  // Diagonal of a cell
+  Vector d = clipped.Diagonal() / (n - 1);
+
+  double za = 0.0;
+
+  // Compute field inside lower Oxy plane
+  for (int i = nax; i < nbx; i++)
+  {
+    for (int j = nay; j < nby; j++)
+    {
+      u[i * ny + j] = clipped[0] + Vector(i * d[0], j * d[1], za);
+      a[i * ny + j] = ValueIfIn(u[i * ny + j]);
+    }
+  }
+
+  // Compute straddling edges inside lower Oxy plane
+  for (int i = nax; i < nbx - 1; i++)
+  {
+    for (int j = nay; j < nby; j++)
+    {
+      // We need a xor b, which can be implemented a == !b 
+      if (!((a[i * ny + j] < 0.0) == !(a[(i + 1) * ny + j] >= 0.0)))
+      {
+        vertex.push_back(Dichotomy(u[i * ny + j], u[(i + 1) * ny + j], a[i * ny + j], a[(i + 1) * ny + j], d[0], epsilon));
+        normal.push_back(Normal(vertex.back()));
+        eax[i * ny + j] = nv;
+        nv++;
+      }
+    }
+  }
+  for (int i = nax; i < nbx; i++)
+  {
+    for (int j = nay; j < nby - 1; j++)
+    {
+      if (!((a[i * ny + j] < 0.0) == !(a[i * ny + (j + 1)] >= 0.0)))
+      {
+        vertex.push_back(Dichotomy(u[i * ny + j], u[i * ny + (j + 1)], a[i * ny + j], a[i * ny + (j + 1)], d[1], epsilon));
+        normal.push_back(Normal(vertex.back()));
+        eay[i * ny + j] = nv;
+        nv++;
+      }
+    }
+  }
+
+  // Array for edge vertices
+  int e[12];
+
+  // For all layers
+  for (int k = naz; k < nbz; k++)
+  {
+    double zb = za + d[2];
+    for (int i = nax; i < nbx; i++)
+    {
+      for (int j = nay; j < nby; j++)
+      {
+        v[i * ny + j] = clipped[0] + Vector(i * d[0], j * d[1], zb);
+        b[i * ny + j] = ValueIfIn(v[i * ny + j]);
+      }
+    }
+
+    // Compute straddling edges inside lower Oxy plane
+    for (int i = nax; i < nbx - 1; i++)
+    {
+      for (int j = nay; j < nby; j++)
+      {
+        //   if (((b[i*ny + j] < 0.0) && (b[(i + 1)*ny + j] >= 0.0)) || ((b[i*ny + j] >= 0.0) && (b[(i + 1)*ny + j] < 0.0)))
+        if (!((b[i * ny + j] < 0.0) == !(b[(i + 1) * ny + j] >= 0.0)))
+        {
+          vertex.push_back(Dichotomy(v[i * ny + j], v[(i + 1) * ny + j], b[i * ny + j], b[(i + 1) * ny + j], d[0], epsilon));
+          normal.push_back(Normal(vertex.back()));
+          ebx[i * ny + j] = nv;
+          nv++;
+        }
+      }
+    }
+
+    for (int i = nax; i < nbx; i++)
+    {
+      for (int j = nay; j < nby - 1; j++)
+      {
+        // if (((b[i*ny + j] < 0.0) && (b[i*ny + (j + 1)] >= 0.0)) || ((b[i*ny + j] >= 0.0) && (b[i*ny + (j + 1)] < 0.0)))
+        if (!((b[i * ny + j] < 0.0) == !(b[i * ny + (j + 1)] >= 0.0)))
+        {
+          vertex.push_back(Dichotomy(v[i * ny + j], v[i * ny + (j + 1)], b[i * ny + j], b[i * ny + (j + 1)], d[1], epsilon));
+          normal.push_back(Normal(vertex.back()));
+          eby[i * ny + j] = nv;
+          nv++;
+        }
+      }
+    }
+
+    // Create vertical straddling edges
+    for (int i = nax; i < nbx; i++)
+    {
+      for (int j = nay; j < nby; j++)
+      {
+        // if ((a[i*ny + j] < 0.0) && (b[i*ny + j] >= 0.0) || (a[i*ny + j] >= 0.0) && (b[i*ny + j] < 0.0))
+        if (!((a[i * ny + j] < 0.0) == !(b[i * ny + j] >= 0.0)))
+        {
+          vertex.push_back(Dichotomy(u[i * ny + j], v[i * ny + j], a[i * ny + j], b[i * ny + j], d[2], epsilon));
+          normal.push_back(Normal(vertex.back()));
+          ez[i * ny + j] = nv;
+          nv++;
+        }
+      }
+    }
+
+    // Create mesh
+    for (int i = nax; i < nbx - 1; i++)
+    {
+      for (int j = nay; j < nby - 1; j++)
+      {
+        int cubeindex = 0;
+        if (a[i * ny + j] < 0.0)       cubeindex |= 1;
+        if (a[(i + 1) * ny + j] < 0.0)   cubeindex |= 2;
+        if (a[i * ny + j + 1] < 0.0)     cubeindex |= 4;
+        if (a[(i + 1) * ny + j + 1] < 0.0) cubeindex |= 8;
+        if (b[i * ny + j] < 0.0)       cubeindex |= 16;
+        if (b[(i + 1) * ny + j] < 0.0)   cubeindex |= 32;
+        if (b[i * ny + j + 1] < 0.0)     cubeindex |= 64;
+        if (b[(i + 1) * ny + j + 1] < 0.0) cubeindex |= 128;
+
+        // Cube is straddling the surface
+        if ((cubeindex != 255) && (cubeindex != 0))
+        {
+          e[0] = eax[i * ny + j];
+          e[1] = eax[i * ny + (j + 1)];
+          e[2] = ebx[i * ny + j];
+          e[3] = ebx[i * ny + (j + 1)];
+          e[4] = eay[i * ny + j];
+          e[5] = eay[(i + 1) * ny + j];
+          e[6] = eby[i * ny + j];
+          e[7] = eby[(i + 1) * ny + j];
+          e[8] = ez[i * ny + j];
+          e[9] = ez[(i + 1) * ny + j];
+          e[10] = ez[i * ny + (j + 1)];
+          e[11] = ez[(i + 1) * ny + (j + 1)];
+
+          for (int h = 0; TriangleTable[cubeindex][h] != -1; h += 3)
+          {
+            triangle.push_back(e[TriangleTable[cubeindex][h + 0]]);
+            triangle.push_back(e[TriangleTable[cubeindex][h + 1]]);
+            triangle.push_back(e[TriangleTable[cubeindex][h + 2]]);
+          }
+        }
+      }
+    }
+
+    std::swap(a, b);
+
+    za = zb;
+    std::swap(eax, ebx);
+    std::swap(eay, eby);
+    std::swap(u, v);
+  }
+
+  delete[]a;
+  delete[]b;
+  delete[]u;
+  delete[]v;
+
+  delete[]eax;
+  delete[]eay;
+  delete[]ebx;
+  delete[]eby;
+  delete[]ez;
+
+  std::vector<int> normals = triangle;
+
+  if(colored){
+    for(Vector& vert : vertex){
+      color.push_back(root->EvalColorIfIn(vert));
     }
   }
 

@@ -33,6 +33,7 @@
 #include <ctime>
 #include <chrono>
 #include <cstdio>
+#include "blobs/include/BlobTree.h"
 
 
 #define NUM_MODELS  9               // Parametric 3d shapes to generate
@@ -163,9 +164,14 @@ int main(void)
             std::unique_ptr<Node> root = ParseBlobTree(editor.GetText());
             double parseMs = MsSince(t0);
 
-            AnalyticScalarField implicit(root.get());
             t0 = std::chrono::steady_clock::now();
+            if (editor.accelerate) {
+                root = BlobTree::SortTree(std::move(root));
+            }
             BBox box = root->ComputeBBox();
+            // Built after the sort: SortTree may free the old root
+            AnalyticScalarField implicit(root.get());
+
             double bboxMs = MsSince(t0);
             rootBox = { { (float)box.Min()[0], (float)box.Min()[1], (float)box.Min()[2] },
                         { (float)box.Max()[0], (float)box.Max()[1], (float)box.Max()[2] } };
@@ -173,7 +179,12 @@ int main(void)
             TMesh mesh;
             AnalyticScalarField::evaluations = 0;
             t0 = std::chrono::steady_clock::now();
-            implicit.Polygonize(kGridResolution, mesh, Box(box.Min(), box.Max()), 1e-4, true);   // true: per-vertex colors
+            if(editor.accelerate){
+                implicit.PolygonizeWithBVH(kGridResolution, mesh, Box(box.Min(), box.Max()), 1e-4, true);   // true: per-vertex colors
+            }else{
+                implicit.Polygonize(kGridResolution, mesh, Box(box.Min(), box.Max()), 1e-4, true);   // true: per-vertex colors
+            }
+            
             double polygonizeMs = MsSince(t0);   // field evaluation + marching cubes + vertex colors
             long long evaluations = AnalyticScalarField::evaluations;   // grid + edge refinement + normals
 

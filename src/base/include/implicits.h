@@ -15,6 +15,7 @@ protected:
 public:
   AnalyticScalarField(Node* root);
   virtual double Value(const Vector&) const;
+  virtual double ValueIfIn(const Vector&) const;
   virtual Vector Gradient(const Vector&) const;
   static inline double threshold = 0.5;
 
@@ -27,6 +28,7 @@ public:
   Vector Dichotomy(Vector, Vector, double, double, double, const double& = 1.0e-4) const;
 
   virtual void Polygonize(int, TMesh&, const Box&, const double& = 1e-4, bool colored=false) const;
+  virtual void PolygonizeWithBVH(int, TMesh&, const Box&, const double& = 1e-4, bool colored=false) const;
 protected:
   static const double Epsilon; //!< Epsilon value for partial derivatives
 protected:

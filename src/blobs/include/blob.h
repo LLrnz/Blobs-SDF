@@ -43,6 +43,7 @@ class Blob: public Node{
     public:
         Blob(float potential, Color col);
         float Evaluate(const Vector& p);
+        float EvalPruned(const Vector& p);
         virtual float Distance(const Vector& p) = 0;
 };
 
@@ -54,6 +55,8 @@ class SphereBlob: public Blob{
         SphereBlob(Vector center, float potential, Color col);
         float Distance(const Vector& p);
         Color EvaluateColor(const Vector& p);
+        Color EvalColorIfIn(const Vector& p);
+        
         float GetLipschitzBound();
         BBox  ComputeBBox();
 };
@@ -67,6 +70,7 @@ class CapsuleBlob: public Blob{
 
         float Distance(const Vector& p);
         Color EvaluateColor(const Vector& p);
+        Color EvalColorIfIn(const Vector& p);
         float GetLipschitzBound();
         BBox  ComputeBBox();
 

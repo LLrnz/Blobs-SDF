@@ -17,6 +17,9 @@ public:
     // When unfocused it is still drawn (dimmed) but ignores input.
     bool focused = true;
 
+    // "Accel" checkbox: sort the tree and polygonize with the BVH. Toggling it regenerates.
+    bool accelerate = true;
+
     // Handles mouse and keyboard input. Call once per frame while focused.
     // For Load / Save, the chosen file is available from ActionPath().
     EditorAction Update();
@@ -70,6 +73,7 @@ private:
     float Measure(const std::string& s, float size) const;
     void  Text(const std::string& s, float x, float y, float size, Color color) const;
     void  DrawButton(Rectangle r, const char* label, bool enabled) const;
+    void  DrawCheckbox(Rectangle r, const char* label, bool checked) const;
 
     // Layout
     Rectangle Panel() const;
@@ -79,6 +83,7 @@ private:
     Rectangle LoadButton() const;
     Rectangle SaveButton() const;
     Rectangle RandomButton() const;
+    Rectangle AccelerateCheckbox() const;   // box + label, the whole area is clickable
     Rectangle PromptRow() const;
     Rectangle PromptInput() const;
     Rectangle PromptOk() const;
