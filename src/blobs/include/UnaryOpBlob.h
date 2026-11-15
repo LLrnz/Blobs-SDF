@@ -80,14 +80,14 @@ class TwistYBlob: public UnaryOpBlob{
 };
 
 
-class TaperBlob: public UnaryOpBlob{
+class TaperYBlob: public UnaryOpBlob{
     private:
         double rate;
     public:
         float Evaluate(const Vector& p);
         float GetLipschitzBound();
         void  ComputeBBox();
-        TaperBlob(double rate, std::unique_ptr<Node> child);
+        TaperYBlob(double rate, std::unique_ptr<Node> child);
 };
 
 
@@ -100,3 +100,21 @@ class BendBlob: public UnaryOpBlob{
         void  ComputeBBox();
         BendBlob(double degreesPerUnit, std::unique_ptr<Node> child);
 };
+
+class RevolutionizeYBlob: public UnaryOpBlob{
+    public:
+        float Evaluate(const Vector& p);
+        float GetLipschitzBound();
+        void  ComputeBBox();
+        RevolutionizeYBlob(std::unique_ptr<Node> child);
+};
+
+class SymmetryXBlob: public UnaryOpBlob{
+    public:
+        float Evaluate(const Vector& p);
+        float GetLipschitzBound();
+        void  ComputeBBox();
+        SymmetryXBlob(std::unique_ptr<Node> child);
+};
+
+

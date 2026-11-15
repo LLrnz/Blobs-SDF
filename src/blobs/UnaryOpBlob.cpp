@@ -1,7 +1,9 @@
 #include "include/UnaryOpBlob.h"
 #include <functional>
+#include "../base/include/implicits.h"
 
 
+//TODO: compute cos/sin only once per call
 namespace {
 constexpr double kDegToRad = M_PI / 180.0;
 }
@@ -116,18 +118,19 @@ void  TwistYBlob::ComputeBBox(){
 }
 
 
-TaperBlob::TaperBlob(double rate, std::unique_ptr<Node> child)
+TaperYBlob::TaperYBlob(double rate, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(rate) {}
 
-float TaperBlob::Evaluate(const Vector& p){
+float TaperYBlob::Evaluate(const Vector& p){
+    Vector scale = Vector(1+p[1]*rate, 1, 1+p[1]*rate);
+    return child->Evaluate(MoreVector::DivideEachValue(p, scale));
+}
+
+float TaperYBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-float TaperBlob::GetLipschitzBound(){
-    throw("not implemented");
-}
-
-void  TaperBlob::ComputeBBox(){
+void  TaperYBlob::ComputeBBox(){
     throw("not implemented");
 }
 
@@ -136,7 +139,8 @@ BendBlob::BendBlob(double degreesPerUnit, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(degreesPerUnit * kDegToRad) {}
 
 float BendBlob::Evaluate(const Vector& p){
-    throw("not implemented");
+    Vector t = Vector(0, p[1]*rate, 0);
+    return child->Evaluate(p-t);
 }
 
 float BendBlob::GetLipschitzBound(){
@@ -146,3 +150,43 @@ float BendBlob::GetLipschitzBound(){
 void  BendBlob::ComputeBBox(){
     throw("not implemented");
 }
+
+//hyper stylé de le faire en coordonées locales
+//opérateur unaire pour ça ?
+RevolutionizeYBlob::RevolutionizeYBlob(std::unique_ptr<Node> child)
+    : UnaryOpBlob(std::move(child)) {}
+
+float RevolutionizeYBlob::Evaluate(const Vector& p){
+    double dist = std::sqrt(p[0]*p[0] + p[2]*p[2]);
+    Vector t = Vector(dist, p[1], 0);
+    return child->Evaluate(t);
+}
+
+float RevolutionizeYBlob::GetLipschitzBound(){
+    throw("not implemented");
+}
+
+void  RevolutionizeYBlob::ComputeBBox(){
+    throw("not implemented");
+}
+
+
+SymmetryXBlob::SymmetryXBlob(std::unique_ptr<Node> child)
+    : UnaryOpBlob(std::move(child)) {}
+
+float SymmetryXBlob::Evaluate(const Vector& p){
+    Vector normalized = p;
+    Normalize(normalized);
+    double angle = normalized*Vector(1,0,0);
+    Vector t = Vector(p[0]*angle, p[1], p[2]*angle);
+    return child->Evaluate(t);
+}
+
+float SymmetryXBlob::GetLipschitzBound(){
+    throw("not implemented");
+}
+
+void  SymmetryXBlob::ComputeBBox(){
+    throw("not implemented");
+}
+
