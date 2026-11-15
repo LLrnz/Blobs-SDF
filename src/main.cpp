@@ -139,17 +139,26 @@ int main(void)
 
     Model model = { 0 };    // empty until the first successful generate
 
+    // Bounding box of the root node, drawn as a wireframe in the 3D view (F3 toggles it)
+    BoundingBox rootBox = { { 0, 0, 0 }, { 0, 0, 0 } };
+    bool hasRootBox = false;
+    bool showRootBox = true;
+
     // Returns true if a new mesh was built
     auto generate = [&]() -> bool {
         try {
             std::unique_ptr<Node> root = ParseBlobTree(editor.GetText());
 
             AnalyticScalarField implicit(root.get());
+            BBox box = root->ComputeBBox();
+            rootBox = { { (float)box.Min()[0], (float)box.Min()[1], (float)box.Min()[2] },
+                        { (float)box.Max()[0], (float)box.Max()[1], (float)box.Max()[2] } };
+            hasRootBox = true;
             TMesh mesh;
-            implicit.Polygonize(64, mesh, Box(4.0), 1e-4, true);   // true: per-vertex colors
+            implicit.Polygonize(64, mesh, Box(box.Min(), box.Max()), 1e-4, true);   // true: per-vertex colors
 
             if (mesh.Triangles() == 0) {
-                editor.SetStatus("No surface inside the box [-4, 4]^3", true);
+                editor.SetStatus("No surface inside the root bounding box", true);
                 return false;
             }
 
@@ -355,6 +364,9 @@ int main(void)
         // The frame is captured after the 3D view is drawn but before the editor panel.
         bool screenshot = IsKeyPressed(KEY_F2);
 
+        // F3 shows / hides the root bounding box (works in both modes)
+        if (IsKeyPressed(KEY_F3)) showRootBox = !showRootBox;
+
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
@@ -365,6 +377,7 @@ int main(void)
 
                DrawModel(model, position, 1.0f, WHITE);
                DrawGrid(10, 1.0);
+               if (showRootBox && hasRootBox) DrawBoundingBox(rootBox, RED);
 
             EndMode3D();
 
