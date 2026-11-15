@@ -317,6 +317,19 @@ int main(void)
         // Some default standard keyboard/mouse inputs are hardcoded to simplify use
         // For advanced camera controls, it's recommended to compute camera movement manually
         UpdateCamera(&camera, cameraMode);                  // Update camera
+
+        // Vertical movement along the world y axis: Space goes up, Shift goes down.
+        // Position and target move together so the view direction is unchanged.
+        // (raylib already handles Space in CAMERA_FREE, so skip it there to avoid double speed.)
+        float lift = 0.0f;
+        if (IsKeyDown(KEY_SPACE) && cameraMode != CAMERA_FREE) lift += 1.0f;
+        if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) lift -= 1.0f;
+        if (lift != 0.0f)
+        {
+            float dy = lift * 5.4f * GetFrameTime();        // same speed as raylib's WASD
+            camera.position.y += dy;
+            camera.target.y += dy;
+        }
         }
 
        
