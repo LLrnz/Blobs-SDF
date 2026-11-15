@@ -198,8 +198,12 @@ BendBlob::BendBlob(double degreesPerUnit, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(degreesPerUnit * kDegToRad) {}
 
 Vector BendBlob::Transform(const Vector& p){
-    Vector t = Vector(0, p[1]*rate, 0);
-    return p-t;
+
+    double angle = rate * p[0];
+    double c = std::cos(angle), s = std::sin(angle);
+    return Vector(c * p[0] + s * p[1],
+                 -s * p[0] + c * p[1],
+                  p[2]);
 }
 
 float BendBlob::GetLipschitzBound(){
@@ -207,17 +211,12 @@ float BendBlob::GetLipschitzBound(){
 }
 
 BBox  BendBlob::ComputeBBox(){
-    // Matches the current Transform, q = (x, y*(1 - rate), z): a stretch along y by
-    // 1 / (1 - rate) (not a bend yet). For a real bend (rotation around z by an angle
-    // depending on x), use the same cylinder idea as the twist, around z instead of y.
     BBox b = child->ComputeBBox();
-    double f = 1.0 - rate;
-    if (std::abs(f) < 1e-9)
-        return b;   // degenerate: the field no longer depends on y (infinite extent)
-    Vector lo = b.Min(), hi = b.Max();
-    lo[1] = b.Min()[1] / f;
-    hi[1] = b.Max()[1] / f;
-    return BBox::FromCorners(lo, hi);
+    double r = 0;
+    for (double x : { b.Min()[0], b.Max()[0] })
+        for (double y : { b.Min()[1], b.Max()[1] })
+            r = std::max(r, std::sqrt(x*x + y*y));
+    return BBox(Vector(-r, -r, b.Min()[2]), Vector(r, r, b.Max()[2]));
 }
 
 
