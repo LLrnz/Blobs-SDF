@@ -8,6 +8,14 @@
 //TODO: compute cos/sin only once per call
 namespace {
 constexpr double kDegToRad = M_PI / 180.0;
+
+double MaxRadius(BBox b, int a, int c) {
+    double r = 0;
+    for (double u : { b.Min()[a], b.Max()[a] })
+        for (double v : { b.Min()[c], b.Max()[c] })
+            r = std::max(r, std::sqrt(u*u + v*v));
+    return r;
+}
 }
 
 Color UnaryOpBlob::EvaluateColor(const Vector& p){
@@ -31,7 +39,8 @@ Vector TranslateBlob::Transform(const Vector& p){
 }
 
 float TranslateBlob::GetLipschitzBound(){
-    throw("not implemented");
+    // A translation doesn't change distances.
+    return child->GetLipschitzBound();
 }
 
 BBox  TranslateBlob::ComputeBBox(){
@@ -55,7 +64,8 @@ Vector RotateXBlob::Transform(const Vector& p){
 }
 
 float RotateXBlob::GetLipschitzBound(){
-    throw("not implemented");
+    // A rotation doesn't change distances.
+    return child->GetLipschitzBound();
 }
 
 
@@ -78,7 +88,7 @@ Vector RotateYBlob::Transform(const Vector& p){
 }
 
 float RotateYBlob::GetLipschitzBound(){
-    throw("not implemented");
+    return child->GetLipschitzBound();
 }
 
 BBox  RotateYBlob::ComputeBBox(){
@@ -101,7 +111,7 @@ Vector RotateZBlob::Transform(const Vector& p){
 }
 
 float RotateZBlob::GetLipschitzBound(){
-    throw("not implemented");
+    return child->GetLipschitzBound();
 }
 
 BBox  RotateZBlob::ComputeBBox(){
@@ -121,7 +131,9 @@ Vector ScaleBlob::Transform(const Vector& p){
 }
 
 float ScaleBlob::GetLipschitzBound(){
-    throw("not implemented");
+    // Transform divides by s: distances are stretched by at most 1 / min|s_i|.
+    double m = std::min({ std::abs(s[0]), std::abs(s[1]), std::abs(s[2]) });
+    return child->GetLipschitzBound() / m;
 }
 
 BBox  ScaleBlob::ComputeBBox(){
@@ -146,7 +158,8 @@ Vector TwistYBlob::Transform(const Vector& p){
 }
 
 float TwistYBlob::GetLipschitzBound(){
-    throw("not implemented");
+    double rho = MaxRadius(child->ComputeBBox(), 0, 2);
+    return child->GetLipschitzBound() * (1.0 + std::abs(rate) * rho);
 }
 
 BBox  TwistYBlob::ComputeBBox(){
@@ -172,7 +185,12 @@ Vector TaperYBlob::Transform(const Vector& p){
 }
 
 float TaperYBlob::GetLipschitzBound(){
-    throw("not implemented");
+    BBox b = child->ComputeBBox();
+    double kmin = std::min(1 + rate * b.Min()[1], 1 + rate * b.Max()[1]);
+    if (kmin <= 0)
+        return INFINITY;    // the taper pinches to a point (or flips) inside the shape
+    double rho = MaxRadius(b, 0, 2);
+    return child->GetLipschitzBound() * (std::max(1.0, 1.0 / kmin) + std::abs(rate) * rho / kmin);
 }
 
 BBox  TaperYBlob::ComputeBBox(){
@@ -207,7 +225,8 @@ Vector BendBlob::Transform(const Vector& p){
 }
 
 float BendBlob::GetLipschitzBound(){
-    throw("not implemented");
+    double rho = MaxRadius(child->ComputeBBox(), 0, 1);
+    return child->GetLipschitzBound() * (1.0 + std::abs(rate) * rho);
 }
 
 BBox  BendBlob::ComputeBBox(){
@@ -233,7 +252,9 @@ Vector RevolutionizeYBlob::Transform(const Vector& p){
 }
 
 float RevolutionizeYBlob::GetLipschitzBound(){
-    throw("not implemented");
+    // Transform = (distance to the y axis, y, 0). A distance is 1-Lipschitz, so the
+    // map doesn't stretch distances.
+    return child->GetLipschitzBound();
 }
 
 BBox  RevolutionizeYBlob::ComputeBBox(){
