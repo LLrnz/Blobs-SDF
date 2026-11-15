@@ -10,6 +10,8 @@
 
 namespace {
 
+const Color kDefaultColor = { 200, 200, 200, 255 };
+
 class Parser {
 public:
     explicit Parser(const std::string& src) : s(src) {}
@@ -26,13 +28,13 @@ public:
         if (name == "sphere") {
             Vector c = Vec();
             float potential = Num();
-            node = std::make_unique<SphereBlob>(c, potential);
+            node = std::make_unique<SphereBlob>(c, potential, OptionalColor());
         }
         else if (name == "capsule") {
             Vector a = Vec();
             Vector b = Vec();
             float potential = Num();
-            node = std::make_unique<CapsuleBlob>(a, b, potential);
+            node = std::make_unique<CapsuleBlob>(a, b, potential, OptionalColor());
         }
         else if (IsOperator(name)) {
             std::vector<std::unique_ptr<Node>> children;
@@ -105,6 +107,25 @@ public:
 private:
     const std::string& s;
     size_t pos = 0;
+
+    // Optional primitive color: three integers in [0, 255] before the closing ')'.
+    // Without it, primitives get kDefaultColor.
+    Color OptionalColor() {
+        if (Peek(')'))
+            return kDefaultColor;
+        unsigned char rgb[3];
+        for (unsigned char& c : rgb) {
+            SkipSpace();
+            size_t start = pos;
+            float v = Num();
+            if (v < 0 || v > 255 || v != (int)v) {
+                pos = start;
+                Error("color components must be integers between 0 and 255");
+            }
+            c = (unsigned char)v;
+        }
+        return Color{ rgb[0], rgb[1], rgb[2], 255 };
+    }
 
     // The single child of a unary operator, which must be followed by ')'.
     std::unique_ptr<Node> Child(const std::string& name) {

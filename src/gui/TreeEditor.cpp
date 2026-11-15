@@ -43,8 +43,8 @@ const char* kFontCandidates[] = {
 };
 
 const char* kHelp[] = {
-    "sphere(cx cy cz, potential)",
-    "capsule(ax ay az, bx by bz, potential)",
+    "sphere(cx cy cz, potential [, r g b])",
+    "capsule(ax ay az, bx by bz, potential [, r g b])   colors: 0-255",
     "union | blend | difference | intersection(a, b, ...)",
     "translate(x y z, a)  rotateX|Y|Z(deg, a)  scale(x y z, a)",
     "twist(deg/unit y, a)  taper(k, a)  bend(deg/unit x, a)",
@@ -65,8 +65,8 @@ struct InsertItem {
     bool gapBefore;     // visual separator between primitives and operators
 };
 const InsertItem kInsertItems[] = {
-    { "sphere",       "sphere(0 0 0, 1)",                          false },
-    { "capsule",      "capsule(0 0 0, 0 1 0, 1)",                  false },
+    { "sphere",       "sphere(0 0 0, 1, COLOR)",                   false },
+    { "capsule",      "capsule(0 0 0, 0 1 0, 1, COLOR)",           false },
     { "blend",        "blend(\n\tNODE,\n\tNODE\n)",                true  },
     { "union",        "union(\n\tNODE,\n\tNODE\n)",                false },
     { "difference",   "difference(\n\tNODE,\n\tNODE\n)",           false },
@@ -84,6 +84,13 @@ const InsertItem kInsertItems[] = {
 constexpr int kInsertCount = sizeof(kInsertItems) / sizeof(kInsertItems[0]);
 
 const char* kPlaceholder = "NODE";
+const char* kColorToken = "COLOR";     // replaced by a random "r g b" when inserted
+
+// A random, fairly saturated and bright color as "r g b", so primitives are easy to tell apart.
+std::string RandomColor() {
+    Color c = ColorFromHSV((float)GetRandomValue(0, 359), 0.65f, 0.9f);
+    return std::to_string(c.r) + " " + std::to_string(c.g) + " " + std::to_string(c.b);
+}
 
 bool CtrlDown() {
     return IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL) ||
@@ -619,7 +626,11 @@ EditorAction TreeEditor::Update() {
     for (int i = 0; i < kInsertCount; i++) {
         if (Clicked(InsertButton(i))) {
             Checkpoint(EditKind::Other);
-            InsertSnippet(kInsertItems[i].snippet);
+            std::string snippet = kInsertItems[i].snippet;
+            size_t token = snippet.find(kColorToken);
+            if (token != std::string::npos)
+                snippet.replace(token, std::string(kColorToken).size(), RandomColor());
+            InsertSnippet(snippet);
             ScrollToCursor();
             return EditorAction::None;
         }
