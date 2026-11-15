@@ -71,8 +71,10 @@ float  SphereBlob::GetLipschitzBound(){
    return lip_bound;
 }
 
-void  SphereBlob::ComputeBBox(){
+BBox  SphereBlob::ComputeBBox(){
+    Vector R = Vector(potential, potential, potential);
     
+    return BBox(center-R, center+R);
 }
 
 Color SphereBlob::EvaluateColor(const Vector& p){
@@ -99,8 +101,12 @@ float  CapsuleBlob::GetLipschitzBound(){
    return 1; 
 }
 
-void  CapsuleBlob::ComputeBBox(){
+BBox CapsuleBlob::ComputeBBox(){
+    Vector R = Vector(potential, potential, potential);
+    Vector segmin = Vector::Min(a, b);
+    Vector segmax = Vector::Max(a, b);
     
+    return BBox(segmin-R, segmax+R);
 }
 
 Color CapsuleBlob::EvaluateColor(const Vector& p){

@@ -1,7 +1,8 @@
 #include "include/UnaryOpBlob.h"
-#include <functional>
-#include "../base/include/implicits.h"
 #include "raylib.h"
+#include <algorithm>
+#include <cmath>
+#include <sys/syslimits.h>
 
 
 //TODO: compute cos/sin only once per call
@@ -18,12 +19,12 @@ float UnaryOpBlob::Evaluate(const Vector& p){
 }
 
 
+
+//__________________________
+
 TranslateBlob::TranslateBlob(Vector t, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), t(t) {}
 
-// float TranslateBlob::Evaluate(const Vector& p){
-//     return child->Evaluate(p-t);
-// }
 
 Vector TranslateBlob::Transform(const Vector& p){
     return p-t;
@@ -33,10 +34,13 @@ float TranslateBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  TranslateBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  TranslateBlob::ComputeBBox(){
+    return child->ComputeBBox()+t;
 }
 
+
+
+//___________________________
 
 RotateXBlob::RotateXBlob(double degrees, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), angle(degrees * kDegToRad),
@@ -45,9 +49,6 @@ RotateXBlob::RotateXBlob(double degrees, std::unique_ptr<Node> child)
                     Vector(0, -std::sin(angle), std::cos(angle)))){
     }
 
-// float RotateXBlob::Evaluate(const Vector& p){
-//     return child->Evaluate(rot*p);
-// }
 
 Vector RotateXBlob::Transform(const Vector& p){
     return rot*p;
@@ -57,8 +58,12 @@ float RotateXBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  RotateXBlob::ComputeBBox(){
-    throw("not implemented");
+
+
+//__________________________
+
+BBox  RotateXBlob::ComputeBBox(){
+    return child->ComputeBBox().Transformed(rot.Transposed());
 }
 
 RotateYBlob::RotateYBlob(double degrees, std::unique_ptr<Node> child)
@@ -68,10 +73,6 @@ RotateYBlob::RotateYBlob(double degrees, std::unique_ptr<Node> child)
                     Vector(std::sin(angle), 0, std::cos(angle)))){
 }
 
-// float RotateYBlob::Evaluate(const Vector& p){
-//     return child->Evaluate(rot*p);
-// }
-
 Vector RotateYBlob::Transform(const Vector& p){
     return rot*p;
 }
@@ -80,9 +81,13 @@ float RotateYBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  RotateYBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  RotateYBlob::ComputeBBox(){
+    return child->ComputeBBox().Transformed(rot.Transposed());
 }
+
+
+
+//__________________________
 
 RotateZBlob::RotateZBlob(double degrees, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), angle(degrees * kDegToRad),
@@ -90,10 +95,6 @@ RotateZBlob::RotateZBlob(double degrees, std::unique_ptr<Node> child)
                     Vector(-std::sin(angle), std::cos(angle), 0),
                     Vector(0, 0, 1))){                
 }
-
-// float RotateZBlob::Evaluate(const Vector& p){
-//     return child->Evaluate(rot*p);
-// }
 
 Vector RotateZBlob::Transform(const Vector& p){
     return rot*p;
@@ -103,18 +104,17 @@ float RotateZBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  RotateZBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  RotateZBlob::ComputeBBox(){
+    return child->ComputeBBox().Transformed(rot.Transposed());
 }
 
 
 
+//__________________________
+
 ScaleBlob::ScaleBlob(Vector s, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), s(s) {}
 
-// float ScaleBlob::Evaluate(const Vector& p){
-//     return child->Evaluate(MoreVector::DivideEachValue(p, s));
-// }
 
 Vector ScaleBlob::Transform(const Vector& p){
     return MoreVector::DivideEachValue(p, s);
@@ -124,20 +124,18 @@ float ScaleBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  ScaleBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  ScaleBlob::ComputeBBox(){
+    BBox b = child->ComputeBBox();
+    return BBox::FromCorners(MoreVector::MultEach(b.Min(), s), MoreVector::MultEach(b.Max(), s));
 }
 
+
+
+//__________________________
 
 TwistYBlob::TwistYBlob(double degreesPerUnit, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(degreesPerUnit * kDegToRad) {}
 
-// float TwistYBlob::Evaluate(const Vector& p){
-//     Matrix33 rot = Matrix33(  Vector(std::cos(p[1]*rate), 0, -std::sin(p[1]*rate)),
-//                     Vector(0, 1, 0), 
-//                     Vector(std::sin(p[1]*rate), 0, std::cos(p[1]*rate)));
-//     return child->Evaluate(rot*p);
-// }
 
 Vector TwistYBlob::Transform(const Vector& p){
     Matrix33 rot = Matrix33(  Vector(std::cos(p[1]*rate), 0, -std::sin(p[1]*rate)),
@@ -151,18 +149,22 @@ float TwistYBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  TwistYBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  TwistYBlob::ComputeBBox(){
+    BBox b = child->ComputeBBox();
+    double r = 0;
+    for (double x : { b.Min()[0], b.Max()[0] })
+        for (double z : { b.Min()[2], b.Max()[2] })
+            r = std::max(r, std::sqrt(x*x + z*z));
+    return BBox(Vector(-r, b.Min()[1], -r), Vector(r, b.Max()[1], r));
 }
 
+
+
+//__________________________
 
 TaperYBlob::TaperYBlob(double rate, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(rate) {}
 
-// float TaperYBlob::Evaluate(const Vector& p){
-//     Vector scale = Vector(1+p[1]*rate, 1, 1+p[1]*rate);
-//     return child->Evaluate(MoreVector::DivideEachValue(p, scale));
-// }
 
 Vector TaperYBlob::Transform(const Vector& p){
     Vector scale = Vector(1+p[1]*rate, 1, 1+p[1]*rate);
@@ -173,10 +175,24 @@ float TaperYBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  TaperYBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  TaperYBlob::ComputeBBox(){
+    BBox b = child->ComputeBBox();
+    double k0 = 1 + rate * b.Min()[1];
+    double k1 = 1 + rate * b.Max()[1];
+
+    Vector minest = b.Min(), maxest = b.Max();
+    for (int axis : { 0, 2 }) {
+        double c[4] = { k0 * b.Min()[axis], k0 * b.Max()[axis],
+                        k1 * b.Min()[axis], k1 * b.Max()[axis] };
+        minest[axis] = std::min(std::min(c[0], c[1]), std::min(c[2], c[3]));
+        maxest[axis] = std::max(std::max(c[0], c[1]), std::max(c[2], c[3]));
+    }
+    return BBox(minest, maxest);
 }
 
+
+
+//__________________________
 
 BendBlob::BendBlob(double degreesPerUnit, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(degreesPerUnit * kDegToRad) {}
@@ -190,10 +206,22 @@ float BendBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  BendBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  BendBlob::ComputeBBox(){
+    // Matches the current Transform, q = (x, y*(1 - rate), z): a stretch along y by
+    // 1 / (1 - rate) (not a bend yet). For a real bend (rotation around z by an angle
+    // depending on x), use the same cylinder idea as the twist, around z instead of y.
+    BBox b = child->ComputeBBox();
+    double f = 1.0 - rate;
+    if (std::abs(f) < 1e-9)
+        return b;   // degenerate: the field no longer depends on y (infinite extent)
+    Vector lo = b.Min(), hi = b.Max();
+    lo[1] = b.Min()[1] / f;
+    hi[1] = b.Max()[1] / f;
+    return BBox::FromCorners(lo, hi);
 }
 
+
+//__________________________
 //hyper stylé de le faire en coordonées locales
 //opérateur unaire pour ça ?
 RevolutionizeYBlob::RevolutionizeYBlob(std::unique_ptr<Node> child)
@@ -209,29 +237,12 @@ float RevolutionizeYBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  RevolutionizeYBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  RevolutionizeYBlob::ComputeBBox(){
+    BBox b = child->ComputeBBox();
+    double r = std::max(0.0, b.Max()[0]);
+    return BBox(Vector(-r, b.Min()[1], -r), Vector(r, b.Max()[1], r));
 }
 
-
-SymmetryXBlob::SymmetryXBlob(std::unique_ptr<Node> child)
-    : UnaryOpBlob(std::move(child)) {}
-
-Vector SymmetryXBlob::Transform(const Vector& p){
-    Vector normalized = p;
-    Normalize(normalized);
-    double angle = normalized*Vector(1,0,0);
-    Vector t = Vector(p[0]*angle, p[1], p[2]*angle);
-    return t;
-}
-
-float SymmetryXBlob::GetLipschitzBound(){
-    throw("not implemented");
-}
-
-void  SymmetryXBlob::ComputeBBox(){
-    throw("not implemented");
-}
 
 // LocalCoorBlob::LocalCoorBlob(std::unique_ptr<Node> child)
 //     : UnaryOpBlob(std::move(child)) {}

@@ -24,7 +24,7 @@ class TranslateBlob: public UnaryOpBlob{
         
         Vector Transform(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         TranslateBlob(Vector t, std::unique_ptr<Node> child);
        
 };
@@ -38,7 +38,7 @@ class RotateXBlob: public UnaryOpBlob{
         
         Vector Transform(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         RotateXBlob(double degrees, std::unique_ptr<Node> child);
        
 };
@@ -51,7 +51,7 @@ class RotateYBlob: public UnaryOpBlob{
         
         Vector Transform(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         RotateYBlob(double degrees, std::unique_ptr<Node> child);
        
 };
@@ -64,7 +64,7 @@ class RotateZBlob: public UnaryOpBlob{
         
         Vector Transform(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         RotateZBlob(double degrees, std::unique_ptr<Node> child);
        
 };
@@ -77,7 +77,7 @@ class ScaleBlob: public UnaryOpBlob{
         
         Vector Transform(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         ScaleBlob(Vector s, std::unique_ptr<Node> child);
        
 };
@@ -90,7 +90,7 @@ class TwistYBlob: public UnaryOpBlob{
         
         Vector Transform(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         TwistYBlob(double degreesPerUnit, std::unique_ptr<Node> child);
        
 };
@@ -104,7 +104,7 @@ class TaperYBlob: public UnaryOpBlob{
         Vector Transform(const Vector& p);
 
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         TaperYBlob(double rate, std::unique_ptr<Node> child);
        
 };
@@ -117,7 +117,7 @@ class BendBlob: public UnaryOpBlob{
         
         Vector Transform(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         BendBlob(double degreesPerUnit, std::unique_ptr<Node> child);
        
 };
@@ -127,7 +127,7 @@ class RevolutionizeYBlob: public UnaryOpBlob{
         
         Vector Transform(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         RevolutionizeYBlob(std::unique_ptr<Node> child);
        
 };
@@ -137,7 +137,7 @@ class SymmetryXBlob: public UnaryOpBlob{
         
         Vector Transform(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
         SymmetryXBlob(std::unique_ptr<Node> child);
        
 };
@@ -149,6 +149,6 @@ class SymmetryXBlob: public UnaryOpBlob{
 //         
 //        Vector Transform(const Vector& p);
 //         float GetLipschitzBound();
-//         void  ComputeBBox();
+//         BBox  ComputeBBox();
 //         LocalCoorBlob(std::unique_ptr<Node> child);
 // };

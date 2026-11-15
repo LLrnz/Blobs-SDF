@@ -16,8 +16,8 @@ float BlendBlob::GetLipschitzBound(){
     throw("not implemented");
 }
 
-void  BlendBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  BlendBlob::ComputeBBox(){
+    return BBox::Union(left_child->ComputeBBox(), right_child->ComputeBBox());
 
 }
 
@@ -40,8 +40,9 @@ float UnionBlob::GetLipschitzBound(){
 
 }
 
-void  UnionBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  UnionBlob::ComputeBBox(){
+    return BBox::Union(left_child->ComputeBBox(), right_child->ComputeBBox());
+
 
 }
 
@@ -66,8 +67,8 @@ float DifferenceBlob::GetLipschitzBound(){
 
 }
 
-void  DifferenceBlob::ComputeBBox(){
-    throw("not implemented");
+BBox  DifferenceBlob::ComputeBBox(){
+    return BBox::Difference(left_child->ComputeBBox(), right_child->ComputeBBox());
 
 }
 
@@ -92,9 +93,8 @@ float IntersectionBlob::GetLipschitzBound(){
 
 }
 
-void  IntersectionBlob::ComputeBBox(){
-    throw("not implemented");
-
+BBox  IntersectionBlob::ComputeBBox(){
+    return BBox::Intersection(left_child->ComputeBBox(), right_child->ComputeBBox());
 }
 
 Color IntersectionBlob::EvaluateColor(const Vector& p){

@@ -55,7 +55,7 @@ class SphereBlob: public Blob{
         float Distance(const Vector& p);
         Color EvaluateColor(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
 };
 
 class CapsuleBlob: public Blob{
@@ -68,7 +68,7 @@ class CapsuleBlob: public Blob{
         float Distance(const Vector& p);
         Color EvaluateColor(const Vector& p);
         float GetLipschitzBound();
-        void  ComputeBBox();
+        BBox  ComputeBBox();
 
 };
 
