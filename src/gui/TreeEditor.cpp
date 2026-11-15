@@ -52,8 +52,8 @@ const char* kHelp[] = {
     "# comment    Ctrl/Cmd + Enter: generate, S: save, O: load",
     "Tab / Shift+Tab: indent    Double-click: select word",
     "Ctrl/Cmd + Z: undo, Shift+Z or Y: redo",
-    "Click the 3D view or ESC: camera mode    ESC: back here",
-    "Drop a file on the window to load it",
+    "Click 3D view / ESC: camera (WASD, Space/Shift: up/down)",
+    "Drop a file to load it    F1: hide/show panel    F2: screenshot",
 };
 constexpr int kHelpLines = sizeof(kHelp) / sizeof(kHelp[0]);
 
