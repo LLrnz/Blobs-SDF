@@ -3,3 +3,6 @@ build/
 include/raylib.h
 .DS_Store
 .vscodesaved_tree.txt
+screenshots/
+*.txt
+BUGS.md
