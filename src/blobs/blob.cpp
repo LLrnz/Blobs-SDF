@@ -1,6 +1,7 @@
 #include "include/Blob.h"
 #include "../base/include/mathematics.h"
 #include "../include/MoreMath.h"
+#include "raylib.h"
 #include <algorithm>
 
 const attenuation_func_type att_func = WYVILL;
@@ -11,6 +12,32 @@ const double SAFETY_FACTOR = 1.01;
 Blob::Blob(float potential, Color col){
     this->potential = potential;
     this->color = col;
+
+        //lipschitz bound of wyvill only
+    switch (lip_func) {
+        case ANALYTIC:
+            static const double x = 1/std::sqrt(2*WYVILL_N - 1);
+            static const double Kprim = 2 * WYVILL_N * x * pow((1 - x*x), (WYVILL_N-1));
+            this->lip_bound =  Kprim/potential;
+            break;
+        case COMPOSITION:
+            this->lip_bound =  2*WYVILL_N/potential;
+            break;
+        case SAMPLING:
+            double samp_x = 0;
+            double step = 1/SAMPLING_N;
+            double max_k = 0;   
+            for (int i = 0; i<SAMPLING_N; i++){
+                samp_x += step;
+                double Kprimed = 2 * WYVILL_N * samp_x * pow((1 - samp_x*samp_x), (WYVILL_N-1));
+                if(Kprimed > max_k){
+                    max_k = Kprimed;
+                }   
+            }
+            this->lip_bound =  max_k*SAFETY_FACTOR/potential;
+            break;
+    }
+
 }
 
 float Blob::Evaluate(const Vector& p){
@@ -27,36 +54,7 @@ float Blob::Evaluate(const Vector& p){
 
 SphereBlob::SphereBlob(Vector center,
         float potential, Color col):Blob(potential, col){
-            this->center = center;
-
-            //lipschitz bound of wyvill only
-            switch (lip_func) {
-                case ANALYTIC:
-                    static const double x = 1/std::sqrt(2*WYVILL_N - 1);
-                    static const double Kprim = 2 * WYVILL_N * x * pow((1 - x*x), (WYVILL_N-1));
-                    this->lip_bound =  Kprim/potential;
-                    break;
-                case COMPOSITION:
-                    this->lip_bound =  2*WYVILL_N/potential;
-                    break;
-                case SAMPLING:
-                    double samp_x = 0;
-                    double step = 1/SAMPLING_N;
-                    double max_k = 0;
-
-                    for (int i = 0; i<SAMPLING_N; i++){
-                        samp_x += step;
-                        double Kprimed = 2 * WYVILL_N * samp_x * pow((1 - samp_x*samp_x), (WYVILL_N-1));
-                        if(Kprimed > max_k){
-                            max_k = Kprimed;
-                        }
-
-                    }
-                    this->lip_bound =  max_k*SAFETY_FACTOR/potential;
-                    break;
-            }
-
-            
+            this->center = center;            
         }
         
 
@@ -73,7 +71,7 @@ float  SphereBlob::GetLipschitzBound(){
 
 BBox  SphereBlob::ComputeBBox(){
     Vector R = Vector(potential, potential, potential);
-    
+
     return BBox(center-R, center+R);
 }
 
@@ -98,14 +96,15 @@ float  CapsuleBlob::Distance(const Vector& p){
 }
 
 float  CapsuleBlob::GetLipschitzBound(){
-   return 1; 
+   // Distance to a segment is 1-Lipschitz, so the bound is the kernel's, like the sphere
+   return lip_bound;
 }
 
 BBox CapsuleBlob::ComputeBBox(){
     Vector R = Vector(potential, potential, potential);
     Vector segmin = Vector::Min(a, b);
     Vector segmax = Vector::Max(a, b);
-    
+
     return BBox(segmin-R, segmax+R);
 }
 
