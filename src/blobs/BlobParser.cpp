@@ -51,6 +51,9 @@ public:
                 node = MakeOperator(name, std::move(node), std::move(children[i]));
         }
         // Unary operators: parameters first, then exactly one child.
+        else if (name == "revolution") {
+            node = std::make_unique<RevolutionizeYBlob>(Child(name));
+        }
         else if (name == "translate") {
             Vector t = Vec();
             node = std::make_unique<TranslateBlob>(t, Child(name));
@@ -79,7 +82,7 @@ public:
         }
         else if (name == "taper") {
             double rate = Num();
-            node = std::make_unique<TaperBlob>(rate, Child(name));
+            node = std::make_unique<TaperYBlob>(rate, Child(name));
         }
         else if (name == "bend") {
             double rate = Num();

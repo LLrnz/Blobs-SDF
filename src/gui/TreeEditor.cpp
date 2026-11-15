@@ -23,8 +23,8 @@ constexpr float kRowGap   = 8.0f;
 constexpr float kPromptH  = 32.0f;
 constexpr float kStatusH  = 22.0f;
 constexpr float kColumnW  = 130.0f;     // width of the insert-button column
-constexpr float kInsertH  = 32.0f;
-constexpr float kInsertGap = 6.0f;
+constexpr float kInsertH  = 28.0f;     // all insert buttons must fit beside the text box
+constexpr float kInsertGap = 4.0f;
 
 constexpr double kDoubleClickTime = 0.35;
 constexpr size_t kMaxUndo = 500;        // undo steps kept
@@ -48,6 +48,7 @@ const char* kHelp[] = {
     "union | blend | difference | intersection(a, b, ...)",
     "translate(x y z, a)  rotateX|Y|Z(deg, a)  scale(x y z, a)",
     "twist(deg/unit y, a)  taper(k, a)  bend(deg/unit x, a)",
+    "revolution(a): revolves a's z = 0 profile around y",
     "# comment    Ctrl/Cmd + Enter: generate, S: save, O: load",
     "Tab / Shift+Tab: indent    Double-click: select word",
     "Ctrl/Cmd + Z: undo, Shift+Z or Y: redo",
@@ -78,6 +79,7 @@ const InsertItem kInsertItems[] = {
     { "twist",        "twist(45,\n\tNODE\n)",                      false },
     { "taper",        "taper(0.5,\n\tNODE\n)",                     false },
     { "bend",         "bend(30,\n\tNODE\n)",                       false },
+    { "revolution",   "revolution(\n\tNODE\n)",                    false },
 };
 constexpr int kInsertCount = sizeof(kInsertItems) / sizeof(kInsertItems[0]);
 
