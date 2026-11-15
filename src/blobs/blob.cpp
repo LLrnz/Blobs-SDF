@@ -3,8 +3,9 @@
 #include "../include/MoreMath.h"
 #include <algorithm>
 
-Blob::Blob(float potential){
+Blob::Blob(float potential, Color col){
     this->potential = potential;
+    this->color = col;
 }
 
 float Blob::Evaluate(const Vector& p){
@@ -15,7 +16,7 @@ float Blob::Evaluate(const Vector& p){
 }
 
 SphereBlob::SphereBlob(Vector center,
-        float potential):Blob(potential){
+        float potential, Color col):Blob(potential, col){
             this->center = center;
         }
         
@@ -34,8 +35,13 @@ void  SphereBlob::ComputeBBox(){
     
 }
 
+Color SphereBlob::EvaluateColor(const Vector& p){
+    return color;
+}
 
-CapsuleBlob::CapsuleBlob(Vector a, Vector b, float potential):Blob(potential){
+
+CapsuleBlob::CapsuleBlob(Vector a, Vector b, 
+    float potential,Color col):Blob(potential, col){
             this->a = a;
             this->b = b;
         }
@@ -55,4 +61,8 @@ float  CapsuleBlob::GetLipschitzBound(){
 
 void  CapsuleBlob::ComputeBBox(){
     
+}
+
+Color CapsuleBlob::EvaluateColor(const Vector& p){
+    return color;
 }

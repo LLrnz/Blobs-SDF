@@ -26,10 +26,9 @@ inline double wyvill(double dist_sqrd, double radius)
 class Blob: public Node{
     protected:
         float potential;
-        Color color;
 
     public:
-        Blob(float potential);
+        Blob(float potential, Color col);
         float Evaluate(const Vector& p);
         virtual float Distance(const Vector& p) = 0;
 };
@@ -39,8 +38,9 @@ class SphereBlob: public Blob{
         Vector center;
     
     public:
-        SphereBlob(Vector center, float potential);
+        SphereBlob(Vector center, float potential, Color col);
         float Distance(const Vector& p);
+        Color EvaluateColor(const Vector& p);
         float GetLipschitzBound();
         void  ComputeBBox();
 };
@@ -50,9 +50,10 @@ class CapsuleBlob: public Blob{
         Vector a, b;
 
     public:
-        CapsuleBlob(Vector a, Vector b, float potential);
+        CapsuleBlob(Vector a, Vector b, float potential, Color col);
 
         float Distance(const Vector& p);
+        Color EvaluateColor(const Vector& p);
         float GetLipschitzBound();
         void  ComputeBBox();
 

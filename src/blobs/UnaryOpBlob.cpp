@@ -1,6 +1,7 @@
 #include "include/UnaryOpBlob.h"
 #include <functional>
 #include "../base/include/implicits.h"
+#include "raylib.h"
 
 
 //TODO: compute cos/sin only once per call
@@ -8,11 +9,24 @@ namespace {
 constexpr double kDegToRad = M_PI / 180.0;
 }
 
+Color UnaryOpBlob::EvaluateColor(const Vector& p){
+    return child->EvaluateColor(Transform(p));
+}
+
+float UnaryOpBlob::Evaluate(const Vector& p){
+    return child->Evaluate(Transform(p));
+}
+
+
 TranslateBlob::TranslateBlob(Vector t, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), t(t) {}
 
-float TranslateBlob::Evaluate(const Vector& p){
-    return child->Evaluate(p-t);
+// float TranslateBlob::Evaluate(const Vector& p){
+//     return child->Evaluate(p-t);
+// }
+
+Vector TranslateBlob::Transform(const Vector& p){
+    return p-t;
 }
 
 float TranslateBlob::GetLipschitzBound(){
@@ -31,8 +45,12 @@ RotateXBlob::RotateXBlob(double degrees, std::unique_ptr<Node> child)
                     Vector(0, -std::sin(angle), std::cos(angle)))){
     }
 
-float RotateXBlob::Evaluate(const Vector& p){
-    return child->Evaluate(rot*p);
+// float RotateXBlob::Evaluate(const Vector& p){
+//     return child->Evaluate(rot*p);
+// }
+
+Vector RotateXBlob::Transform(const Vector& p){
+    return rot*p;
 }
 
 float RotateXBlob::GetLipschitzBound(){
@@ -50,8 +68,12 @@ RotateYBlob::RotateYBlob(double degrees, std::unique_ptr<Node> child)
                     Vector(std::sin(angle), 0, std::cos(angle)))){
 }
 
-float RotateYBlob::Evaluate(const Vector& p){
-    return child->Evaluate(rot*p);
+// float RotateYBlob::Evaluate(const Vector& p){
+//     return child->Evaluate(rot*p);
+// }
+
+Vector RotateYBlob::Transform(const Vector& p){
+    return rot*p;
 }
 
 float RotateYBlob::GetLipschitzBound(){
@@ -69,8 +91,12 @@ RotateZBlob::RotateZBlob(double degrees, std::unique_ptr<Node> child)
                     Vector(0, 0, 1))){                
 }
 
-float RotateZBlob::Evaluate(const Vector& p){
-    return child->Evaluate(rot*p);
+// float RotateZBlob::Evaluate(const Vector& p){
+//     return child->Evaluate(rot*p);
+// }
+
+Vector RotateZBlob::Transform(const Vector& p){
+    return rot*p;
 }
 
 float RotateZBlob::GetLipschitzBound(){
@@ -86,8 +112,12 @@ void  RotateZBlob::ComputeBBox(){
 ScaleBlob::ScaleBlob(Vector s, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), s(s) {}
 
-float ScaleBlob::Evaluate(const Vector& p){
-    return child->Evaluate(MoreVector::DivideEachValue(p, s));
+// float ScaleBlob::Evaluate(const Vector& p){
+//     return child->Evaluate(MoreVector::DivideEachValue(p, s));
+// }
+
+Vector ScaleBlob::Transform(const Vector& p){
+    return MoreVector::DivideEachValue(p, s);
 }
 
 float ScaleBlob::GetLipschitzBound(){
@@ -102,11 +132,19 @@ void  ScaleBlob::ComputeBBox(){
 TwistYBlob::TwistYBlob(double degreesPerUnit, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(degreesPerUnit * kDegToRad) {}
 
-float TwistYBlob::Evaluate(const Vector& p){
+// float TwistYBlob::Evaluate(const Vector& p){
+//     Matrix33 rot = Matrix33(  Vector(std::cos(p[1]*rate), 0, -std::sin(p[1]*rate)),
+//                     Vector(0, 1, 0), 
+//                     Vector(std::sin(p[1]*rate), 0, std::cos(p[1]*rate)));
+//     return child->Evaluate(rot*p);
+// }
+
+Vector TwistYBlob::Transform(const Vector& p){
     Matrix33 rot = Matrix33(  Vector(std::cos(p[1]*rate), 0, -std::sin(p[1]*rate)),
                     Vector(0, 1, 0), 
                     Vector(std::sin(p[1]*rate), 0, std::cos(p[1]*rate)));
-    return child->Evaluate(rot*p);
+
+    return rot*p;
 }
 
 float TwistYBlob::GetLipschitzBound(){
@@ -121,9 +159,14 @@ void  TwistYBlob::ComputeBBox(){
 TaperYBlob::TaperYBlob(double rate, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(rate) {}
 
-float TaperYBlob::Evaluate(const Vector& p){
+// float TaperYBlob::Evaluate(const Vector& p){
+//     Vector scale = Vector(1+p[1]*rate, 1, 1+p[1]*rate);
+//     return child->Evaluate(MoreVector::DivideEachValue(p, scale));
+// }
+
+Vector TaperYBlob::Transform(const Vector& p){
     Vector scale = Vector(1+p[1]*rate, 1, 1+p[1]*rate);
-    return child->Evaluate(MoreVector::DivideEachValue(p, scale));
+    return MoreVector::DivideEachValue(p, scale);
 }
 
 float TaperYBlob::GetLipschitzBound(){
@@ -138,9 +181,9 @@ void  TaperYBlob::ComputeBBox(){
 BendBlob::BendBlob(double degreesPerUnit, std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)), rate(degreesPerUnit * kDegToRad) {}
 
-float BendBlob::Evaluate(const Vector& p){
+Vector BendBlob::Transform(const Vector& p){
     Vector t = Vector(0, p[1]*rate, 0);
-    return child->Evaluate(p-t);
+    return p-t;
 }
 
 float BendBlob::GetLipschitzBound(){
@@ -156,10 +199,10 @@ void  BendBlob::ComputeBBox(){
 RevolutionizeYBlob::RevolutionizeYBlob(std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)) {}
 
-float RevolutionizeYBlob::Evaluate(const Vector& p){
+Vector RevolutionizeYBlob::Transform(const Vector& p){
     double dist = std::sqrt(p[0]*p[0] + p[2]*p[2]);
     Vector t = Vector(dist, p[1], 0);
-    return child->Evaluate(t);
+    return t;
 }
 
 float RevolutionizeYBlob::GetLipschitzBound(){
@@ -174,12 +217,12 @@ void  RevolutionizeYBlob::ComputeBBox(){
 SymmetryXBlob::SymmetryXBlob(std::unique_ptr<Node> child)
     : UnaryOpBlob(std::move(child)) {}
 
-float SymmetryXBlob::Evaluate(const Vector& p){
+Vector SymmetryXBlob::Transform(const Vector& p){
     Vector normalized = p;
     Normalize(normalized);
     double angle = normalized*Vector(1,0,0);
     Vector t = Vector(p[0]*angle, p[1], p[2]*angle);
-    return child->Evaluate(t);
+    return t;
 }
 
 float SymmetryXBlob::GetLipschitzBound(){
@@ -190,3 +233,21 @@ void  SymmetryXBlob::ComputeBBox(){
     throw("not implemented");
 }
 
+// LocalCoorBlob::LocalCoorBlob(std::unique_ptr<Node> child)
+//     : UnaryOpBlob(std::move(child)) {}
+
+// float LocalCoorBlob::Evaluate(const Vector& p){
+//     Vector normalized = p;
+//     Normalize(normalized);
+//     double angle = normalized*Vector(1,0,0);
+//     Vector t = Vector(p[0]*angle, p[1], p[2]*angle);
+//     return child->Evaluate(t);
+// }
+
+// float LocalCoorBlob::GetLipschitzBound(){
+//     throw("not implemented");
+// }
+
+// void  LocalCoorBlob::ComputeBBox(){
+//     throw("not implemented");
+// }

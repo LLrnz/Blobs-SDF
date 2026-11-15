@@ -1,4 +1,5 @@
 #include "include/mesh.h"
+#include <vector>
 
 /*!
 \class TMesh mesh.h
@@ -26,6 +27,7 @@ Indices must have a size multiple of three (three for triangle vertices and thre
 TMesh::TMesh(const std::vector<Vector>& vertices, const std::vector<int>& indices) :vertices(vertices), varray(indices)
 {
   normals.resize(vertices.size(), Vector::Z);
+  colored = colors.size() != 0;
 }
 
 /*!
@@ -35,8 +37,10 @@ TMesh::TMesh(const std::vector<Vector>& vertices, const std::vector<int>& indice
 \param normals Array of normals.
 \param va, na Array of vertex and normal indexes.
 */
-TMesh::TMesh(const std::vector<Vector>& vertices, const std::vector<Vector>& normals, const std::vector<int>& va, const std::vector<int>& na) :vertices(vertices), normals(normals), varray(va), narray(na)
+TMesh::TMesh(const std::vector<Vector>& vertices, const std::vector<Vector>& normals, const std::vector<int>& va, const std::vector<int>& na, const std::vector<Color>& colors) 
+:vertices(vertices), normals(normals), varray(va), narray(na), colors(colors)
 {
+  colored = colors.size() != 0;
 }
 
 /*!
@@ -225,3 +229,6 @@ void TMesh::Scale(double s)
     }
 }
 
+bool TMesh::IsColored(){
+  return colored;
+}

@@ -23,7 +23,7 @@ MeshColor::MeshColor(const TMesh& m, const std::vector<Color>& cols, const std::
 */
 MeshColor::MeshColor(const TMesh& m) : TMesh(m)
 {
-	colors.resize(vertices.size(), Color(1.0, 1.0, 1.0));
+	colors.resize(vertices.size(), WHITE);
 	carray = varray;
 }
 

@@ -3,6 +3,7 @@
 #include "../base/include/implicits.h"
 #include <csignal>
 #include <memory>
+#include "../include/MoreMath.h"
 
 BlendBlob::BlendBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right)
     : BinaryOpBlob(std::move(left), std::move(right)) {}
@@ -20,6 +21,13 @@ void  BlendBlob::ComputeBBox(){
 
 }
 
+Color BlendBlob::EvaluateColor(const Vector& p){
+    double v1 = left_child->Evaluate(p);
+    double v2 = right_child->Evaluate(p);
+    double t = v2 / std::max((v1+v2), 0.001);
+    return MoreColor::Lerp(t, left_child->EvaluateColor(p), right_child->EvaluateColor(p));
+}
+
 
 UnionBlob::UnionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right) : BinaryOpBlob(std::move(left), std::move(right)) {}
 
@@ -35,6 +43,14 @@ float UnionBlob::GetLipschitzBound(){
 void  UnionBlob::ComputeBBox(){
     throw("not implemented");
 
+}
+
+Color UnionBlob::EvaluateColor(const Vector& p){
+    if(left_child->Evaluate(p) > right_child->Evaluate(p)){
+        return left_child->EvaluateColor(p);
+    }else{
+        return right_child->EvaluateColor(p);
+    }
 }
 
 
@@ -55,6 +71,14 @@ void  DifferenceBlob::ComputeBBox(){
 
 }
 
+Color DifferenceBlob::EvaluateColor(const Vector& p){
+    if(left_child->Evaluate(p) < 2* AnalyticScalarField::threshold - right_child->Evaluate(p)){
+        return left_child->EvaluateColor(p);
+    }else{
+        return right_child->EvaluateColor(p);
+    }
+}
+
 
 IntersectionBlob::IntersectionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right) : BinaryOpBlob(std::move(left), std::move(right)) {}
 
@@ -71,4 +95,12 @@ float IntersectionBlob::GetLipschitzBound(){
 void  IntersectionBlob::ComputeBBox(){
     throw("not implemented");
 
+}
+
+Color IntersectionBlob::EvaluateColor(const Vector& p){
+    if(left_child->Evaluate(p) <= right_child->Evaluate(p)){
+        return left_child->EvaluateColor(p);
+    }else{
+        return right_child->EvaluateColor(p);
+    }
 }

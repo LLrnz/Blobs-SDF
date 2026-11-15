@@ -15,6 +15,7 @@ class BlendBlob: public BinaryOpBlob{
         float GetLipschitzBound();
         void  ComputeBBox();
         BlendBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
+        Color EvaluateColor(const Vector& p);
 
 };
 
@@ -24,6 +25,7 @@ class UnionBlob: public BinaryOpBlob{
         float GetLipschitzBound();
         void  ComputeBBox();
         UnionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
+        Color EvaluateColor(const Vector& p);
 };
 
 class DifferenceBlob: public BinaryOpBlob{
@@ -32,6 +34,7 @@ class DifferenceBlob: public BinaryOpBlob{
         float GetLipschitzBound();
         void  ComputeBBox();
         DifferenceBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
+        Color EvaluateColor(const Vector& p);
 };
 
 class IntersectionBlob: public BinaryOpBlob{
@@ -40,4 +43,5 @@ class IntersectionBlob: public BinaryOpBlob{
         float GetLipschitzBound();
         void  ComputeBBox();
         IntersectionBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right);
+        Color EvaluateColor(const Vector& p);
 };

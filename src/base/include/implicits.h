@@ -24,7 +24,7 @@ public:
   // Dichotomy
   Vector Dichotomy(Vector, Vector, double, double, double, const double& = 1.0e-4) const;
 
-  virtual void Polygonize(int, TMesh&, const Box&, const double& = 1e-4) const;
+  virtual void Polygonize(int, TMesh&, const Box&, const double& = 1e-4, bool colored=false) const;
 protected:
   static const double Epsilon; //!< Epsilon value for partial derivatives
 protected:

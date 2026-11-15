@@ -6,44 +6,44 @@
 // Mathematics fundamentals
 #include "mathematics.h"
 
-class Color
+class TColor
 {
 protected:
   double c[4]; //!< Array of color components; includes an alpha channel.
 public:
-  explicit Color(double = 0.0);
-  explicit Color(unsigned long);
-  explicit Color(double, double, double, double = 1.0);
-  explicit Color(int, int, int, int = 255);
+  explicit TColor(double = 0.0);
+  explicit TColor(unsigned long);
+  explicit TColor(double, double, double, double = 1.0);
+  explicit TColor(int, int, int, int = 255);
 
   //! Empty
-  ~Color() {}
+  ~TColor() {}
 
-  Color& operator+=(const Color&);
+  TColor& operator+=(const TColor&);
 
-  Color Scale(const Color&) const;
+  TColor Scale(const TColor&) const;
 
-  friend Color operator+(const Color&, const Color&);
-  friend Color operator-(const Color&, const Color&);
+  friend TColor operator+(const TColor&, const TColor&);
+  friend TColor operator-(const TColor&, const TColor&);
 
-  friend Color operator*(const Color&, double);
-  friend Color operator*(double, const Color&);
-  friend Color operator/(const Color&, double);
+  friend TColor operator*(const TColor&, double);
+  friend TColor operator*(double, const TColor&);
+  friend TColor operator/(const TColor&, double);
 
-  static Color Lerp(double, const Color&, const Color&);
+  static TColor Lerp(double, const TColor&, const TColor&);
 
   double& operator[] (int);
   double operator[] (int) const;
 
-  static const Color White; //!< White.
-  static const Color Transparent; //!< Transparent.
+  static const TColor White; //!< White.
+  static const TColor Transparent; //!< Transparent.
 };
 
 /*!
 \brief Returns the i<sup>th</sup> channel of the spectrum
 \param i nummber of the channel queried (default=last)
 */
-inline double& Color::operator[] (int i)
+inline double& TColor::operator[] (int i)
 {
   return c[i];
 }
@@ -52,7 +52,7 @@ inline double& Color::operator[] (int i)
 \brief Returns a copy of the i<sup>th</sup> channel of the spectrum
 \param i nummber of the channel queried (default=last)
 */
-inline double Color::operator[] (int i) const
+inline double TColor::operator[] (int i) const
 {
   return c[i];
 }
@@ -70,9 +70,9 @@ Color c=(1.0-t)*a+t*b;
 Color c=Lerp(t,a,b);
 \endcode
 */
-inline Color Color::Lerp(double t, const Color& a, const Color& b)
+inline TColor TColor::Lerp(double t, const TColor& a, const TColor& b)
 {
-  return Color((1.0 - t) * a[0] + t * b[0], (1.0 - t) * a[1] + t * b[1], (1.0 - t) * a[2] + t * b[2], (1.0 - t) * a[3] + t * b[3]);
+  return TColor((1.0 - t) * a[0] + t * b[0], (1.0 - t) * a[1] + t * b[1], (1.0 - t) * a[2] + t * b[2], (1.0 - t) * a[3] + t * b[3]);
 }
 
 /*!
@@ -81,7 +81,7 @@ inline Color Color::Lerp(double t, const Color& a, const Color& b)
 Initializes all the components to the given value except the opacity coefficient wich is set to 1.0.
 \param v Grey value.
 */
-inline Color::Color(double v)
+inline TColor::TColor(double v)
 {
   c[0] = c[1] = c[2] = v;
   c[3] = 1.0;
@@ -91,7 +91,7 @@ inline Color::Color(double v)
 \brief Creates a color given a compact color representation
 \param x Color compacted into an unsigned long.
 */
-inline Color::Color(unsigned long x)
+inline TColor::TColor(unsigned long x)
 {
   c[0] = ((x >> 24) & 255) / 255.0;
   c[1] = ((x >> 16) & 255) / 255.0;
@@ -104,7 +104,7 @@ inline Color::Color(unsigned long x)
 \param r,g,b Red, green and blue components.
 \param a Alpha channel, set to 1.0 (opaque) as default.
 */
-inline Color::Color(double r, double g, double b, double a)
+inline TColor::TColor(double r, double g, double b, double a)
 {
   c[0] = r;
   c[1] = g;
@@ -117,14 +117,14 @@ inline Color::Color(double r, double g, double b, double a)
 \param r, g, b Red, green and blue components.
 \param a Alpha channel, set to 255 (opaque) as default.
 */
-inline Color::Color(int r, int g, int b, int a) :Color(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
+inline TColor::TColor(int r, int g, int b, int a) :TColor(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
 {
 }
 
 /*!
 \brief Overloaded operator.
 */
-inline Color& Color::operator+=(const Color& ac)
+inline TColor& TColor::operator+=(const TColor& ac)
 {
   c[0] += ac[0];
   c[1] += ac[1];
@@ -136,34 +136,34 @@ inline Color& Color::operator+=(const Color& ac)
 /*!
 \brief Overloaded sum operator
 */
-inline Color operator+(const Color& u, const Color& v)
+inline TColor operator+(const TColor& u, const TColor& v)
 {
-  return Color(u[0] + v[0], u[1] + v[1], u[2] + v[2], u[3] + v[3]);
+  return TColor(u[0] + v[0], u[1] + v[1], u[2] + v[2], u[3] + v[3]);
 }
 
 /*!
 \brief Scale.
 \param v %Color.
 */
-inline Color Color::Scale(const Color& v) const
+inline TColor TColor::Scale(const TColor& v) const
 {
-  return Color(c[0] * v[0], c[1] * v[1], c[2] * v[2], c[3] * v[3]);
+  return TColor(c[0] * v[0], c[1] * v[1], c[2] * v[2], c[3] * v[3]);
 }
 
 /*!
 \brief Overloaded difference operator
 */
-inline Color operator-(const Color& u, const Color& v)
+inline TColor operator-(const TColor& u, const TColor& v)
 {
-  return Color(u[0] - v[0], u[1] - v[1], u[2] - v[2], u[3] - v[3]);
+  return TColor(u[0] - v[0], u[1] - v[1], u[2] - v[2], u[3] - v[3]);
 }
 
 /*!
 \brief Overloaded product by a scalar operator.
 */
-inline Color operator*(const Color& u, double a)
+inline TColor operator*(const TColor& u, double a)
 {
-  return Color(u[0] * a, u[1] * a, u[2] * a, u[3] * a);
+  return TColor(u[0] * a, u[1] * a, u[2] * a, u[3] * a);
 }
 
 /*!
@@ -172,7 +172,7 @@ inline Color operator*(const Color& u, double a)
 \param c Color.
 \param a Scalar.
 */
-inline Color operator*(double a, const Color& c)
+inline TColor operator*(double a, const TColor& c)
 {
   return c * a;
 }
@@ -182,7 +182,7 @@ inline Color operator*(double a, const Color& c)
 \param c Color.
 \param a Scalar.
 */
-inline Color operator/(const Color& c, double a)
+inline TColor operator/(const TColor& c, double a)
 {
   return c * (1.0 / a);
 }

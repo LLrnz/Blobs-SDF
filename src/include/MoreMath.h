@@ -1,5 +1,7 @@
 #pragma once
 #include "../base/include/mathematics.h"
+#include "raylib.h"
+
 
 class MoreVector{
     public:
@@ -74,4 +76,18 @@ inline Vector& Matrix33::operator[] (int i)
 inline Vector Matrix33::operator[] (int i) const
 {
   return v[i];
+}
+
+class MoreColor{
+    public:
+        static inline Color Lerp(double t, const Color& a, const Color& b);
+};
+
+inline Color MoreColor::Lerp(double t, const Color& c1, const Color& c2)
+{
+  return Color{
+        (unsigned char)((1.0 - t) * c1.r + t * c2.r),
+        (unsigned char)((1.0 - t) * c1.g + t * c2.g),
+        (unsigned char)((1.0 - t) * c1.b + t * c2.b), 
+        (unsigned char)((1.0 - t) * c1.a + t * c2.a)};
 }

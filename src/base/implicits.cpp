@@ -30,10 +30,11 @@ double AnalyticScalarField::Value(const Vector& p) const
 \param g Returned geometry.
 \param epsilon Epsilon value for computing vertices on straddling edges.
 */
-void AnalyticScalarField::Polygonize(int n, TMesh& g, const Box& box, const double& epsilon) const
+void AnalyticScalarField::Polygonize(int n, TMesh& g, const Box& box, const double& epsilon, bool colored) const
 {
   std::vector<Vector> vertex;
   std::vector<Vector> normal;
+  std::vector<Color> color;
 
   std::vector<int> triangle;
 
@@ -242,7 +243,13 @@ void AnalyticScalarField::Polygonize(int n, TMesh& g, const Box& box, const doub
 
   std::vector<int> normals = triangle;
 
-  g = TMesh(vertex, normal, triangle, normals);
+  if(colored){
+    for(Vector& vert : vertex){
+      color.push_back(root->EvaluateColor(vert));
+    }
+  }
+
+  g = TMesh(vertex, normal, triangle, normals, color);
 }
 
 /*!

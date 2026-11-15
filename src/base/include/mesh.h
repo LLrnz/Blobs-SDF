@@ -3,6 +3,8 @@
 #include "box.h"
 #include "ray.h"
 #include "mathematics.h"
+#include "raylib.h"
+#include <vector>
 
 // Triangle
 class Triangle
@@ -35,6 +37,8 @@ public:
   double Area() const;
   double Aspect() const;
   Box GetBox() const;
+
+
 
   // Stream
   friend std::ostream& operator<<(std::ostream&, const Triangle&);
@@ -87,10 +91,13 @@ protected:
   std::vector<Vector> normals;  //!< Normals.
   std::vector<int> varray;     //!< Vertex indexes.
   std::vector<int> narray;     //!< Normal indexes.
+  std::vector<Color> colors;
+
+  bool colored;
 public:
   explicit TMesh();
   explicit TMesh(const std::vector<Vector>&, const std::vector<int>&);
-  explicit TMesh(const std::vector<Vector>&, const std::vector<Vector>&, const std::vector<int>&, const std::vector<int>&);
+  explicit TMesh(const std::vector<Vector>&, const std::vector<Vector>&, const std::vector<int>&, const std::vector<int>&, const std::vector<Color>&);
   ~TMesh();
 
   void Reserve(int, int, int, int);
@@ -98,6 +105,8 @@ public:
   Triangle GetTriangle(int) const;
   Vector Vertex(int) const;
   Vector Vertex(int, int) const;
+
+  Color VertColor(int) const;
 
   Vector Normal(int) const;
 
@@ -117,6 +126,8 @@ public:
   void Scale(double);
 
   void SmoothNormals();
+
+  bool IsColored();
 
   // Constructors from core classes
   explicit TMesh(const Box&);
@@ -153,6 +164,11 @@ inline int TMesh::VertexIndex(int t, int i) const
 {
   return varray.at(t * 3 + i);
 }
+
+inline Color TMesh::VertColor(int i) const{
+  return colors.at(i);
+}
+
 
 /*!
 \brief Get the normal index of a given triangle.
