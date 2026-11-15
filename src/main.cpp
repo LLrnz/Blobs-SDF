@@ -30,6 +30,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <ctime>
 
 
 #define NUM_MODELS  9               // Parametric 3d shapes to generate
@@ -47,6 +48,7 @@ static Mesh GenMeshCustom(TMesh& tmesh);    // Generate a simple triangle mesh f
 // The editor text is saved here on exit and restored on the next start
 // (relative to the working directory, i.e. the project root when run as ./app).
 static const char* kSavedTreePath = "saved_tree.txt";
+static const char* kScreenshotDir = "screenshots";   // F2 saves renders here
 
 // Expands a leading "~/" to the home directory.
 static std::string ExpandPath(const std::string& path)
@@ -337,6 +339,10 @@ int main(void)
 
         //----------------------------------------------------------------------------------
 
+        // F2 takes a screenshot of the 3D view (works in both modes, F keys never type text).
+        // The frame is captured after the 3D view is drawn but before the editor panel.
+        bool screenshot = IsKeyPressed(KEY_F2);
+
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
@@ -349,6 +355,23 @@ int main(void)
                DrawGrid(10, 1.0);
 
             EndMode3D();
+
+            if (screenshot)
+            {
+                // Read the finished frame from the back buffer, before EndDrawing swaps it
+                Image image = LoadImageFromScreen();
+                char stamp[32];
+                std::time_t now = std::time(nullptr);
+                std::strftime(stamp, sizeof stamp, "%Y%m%d_%H%M%S", std::localtime(&now));
+                std::string path = std::string(kScreenshotDir) + "/render_" + stamp + ".png";
+
+                MakeDirectory(kScreenshotDir);
+                if (ExportImage(image, path.c_str()))
+                    editor.SetStatus("Screenshot saved to " + path, false);
+                else
+                    editor.SetStatus("Could not save the screenshot to " + path, true);
+                UnloadImage(image);
+            }
 
             editor.Draw();
 
