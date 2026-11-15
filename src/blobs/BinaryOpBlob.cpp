@@ -3,6 +3,7 @@
 #include "../base/include/implicits.h"
 #include <csignal>
 #include <memory>
+#include <algorithm>
 #include "../include/MoreMath.h"
 
 BlendBlob::BlendBlob(std::unique_ptr<Node> left, std::unique_ptr<Node> right)
@@ -13,7 +14,7 @@ float BlendBlob::Evaluate(const Vector& p){
 }
 
 float BlendBlob::GetLipschitzBound(){
-    throw("not implemented");
+    return left_child->GetLipschitzBound() + right_child->GetLipschitzBound();
 }
 
 BBox  BlendBlob::ComputeBBox(){
@@ -36,8 +37,7 @@ float UnionBlob::Evaluate(const Vector& p){
 }
 
 float UnionBlob::GetLipschitzBound(){
-    throw("not implemented");
-
+    return std::max(left_child->GetLipschitzBound(), right_child->GetLipschitzBound());
 }
 
 BBox  UnionBlob::ComputeBBox(){
@@ -63,8 +63,7 @@ float DifferenceBlob::Evaluate(const Vector& p){
 }
 
 float DifferenceBlob::GetLipschitzBound(){
-    throw("not implemented");
-
+    return std::max(left_child->GetLipschitzBound(), right_child->GetLipschitzBound());
 }
 
 BBox  DifferenceBlob::ComputeBBox(){
@@ -89,8 +88,7 @@ float IntersectionBlob::Evaluate(const Vector& p){
 }
 
 float IntersectionBlob::GetLipschitzBound(){
-    throw("not implemented");
-
+    return std::max(left_child->GetLipschitzBound(), right_child->GetLipschitzBound());
 }
 
 BBox  IntersectionBlob::ComputeBBox(){
