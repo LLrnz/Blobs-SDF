@@ -19,6 +19,7 @@ AnalyticScalarField::AnalyticScalarField(Node* root)
 */
 double AnalyticScalarField::Value(const Vector& p) const
 {
+  evaluations++;
   return root->Evaluate(p) - threshold;
 }
 

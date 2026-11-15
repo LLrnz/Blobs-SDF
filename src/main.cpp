@@ -171,9 +171,11 @@ int main(void)
                         { (float)box.Max()[0], (float)box.Max()[1], (float)box.Max()[2] } };
             hasRootBox = true;
             TMesh mesh;
+            AnalyticScalarField::evaluations = 0;
             t0 = std::chrono::steady_clock::now();
             implicit.Polygonize(kGridResolution, mesh, Box(box.Min(), box.Max()), 1e-4, true);   // true: per-vertex colors
             double polygonizeMs = MsSince(t0);   // field evaluation + marching cubes + vertex colors
+            long long evaluations = AnalyticScalarField::evaluations;   // grid + edge refinement + normals
 
             if (mesh.Triangles() == 0) {
                 editor.SetStatus("No surface inside the root bounding box", true);
@@ -191,22 +193,23 @@ int main(void)
             model.materials[0].shader = shader;
 
             char perf[256];
-            std::snprintf(perf, sizeof perf, "Generated %d triangles in %.1f ms (polygonize %.1f, upload %.1f)",
-                          mesh.Triangles(), totalMs, polygonizeMs, uploadMs);
+            std::snprintf(perf, sizeof perf, "Generated %d triangles in %.1f ms (polygonize %.1f, upload %.1f), %lld evals",
+                          mesh.Triangles(), totalMs, polygonizeMs, uploadMs, evaluations);
             editor.SetStatus(perf, false);
 
             // Full breakdown in the terminal and in the CSV log (header written on first use)
-            std::printf("[perf] parse %.3f ms | bbox %.3f ms | polygonize %.3f ms | upload %.3f ms | total %.3f ms | %d triangles, %d^3 grid\n",
-                        parseMs, bboxMs, polygonizeMs, uploadMs, totalMs, mesh.Triangles(), kGridResolution);
+            std::printf("[perf] parse %.3f ms | bbox %.3f ms | polygonize %.3f ms | upload %.3f ms | total %.3f ms | %d triangles, %d^3 grid | %lld evaluations (%.1f us each)\n",
+                        parseMs, bboxMs, polygonizeMs, uploadMs, totalMs, mesh.Triangles(), kGridResolution,
+                        evaluations, evaluations ? polygonizeMs * 1000.0 / evaluations : 0.0);
             bool newLog = !FileExists(kPerfLogPath);
             if (FILE* log = std::fopen(kPerfLogPath, "a")) {
                 if (newLog)
-                    std::fprintf(log, "timestamp,grid,triangles,parse_ms,bbox_ms,polygonize_ms,upload_ms,total_ms\n");
+                    std::fprintf(log, "timestamp,grid,triangles,parse_ms,bbox_ms,polygonize_ms,upload_ms,total_ms,evaluations\n");
                 char stamp[32];
                 std::time_t now = std::time(nullptr);
                 std::strftime(stamp, sizeof stamp, "%Y-%m-%d %H:%M:%S", std::localtime(&now));
-                std::fprintf(log, "%s,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f\n", stamp, kGridResolution, mesh.Triangles(),
-                             parseMs, bboxMs, polygonizeMs, uploadMs, totalMs);
+                std::fprintf(log, "%s,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%lld\n", stamp, kGridResolution, mesh.Triangles(),
+                             parseMs, bboxMs, polygonizeMs, uploadMs, totalMs, evaluations);
                 std::fclose(log);
             }
             return true;

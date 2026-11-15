@@ -18,6 +18,10 @@ public:
   virtual Vector Gradient(const Vector&) const;
   static inline double threshold = 0.5;
 
+  // Number of calls to Value() (field evaluations of the whole tree), for performance
+  // measurements. Reset it before an operation and read it after.
+  static inline long long evaluations = 0;
+
   // Normal
   virtual Vector Normal(const Vector&) const;
 
