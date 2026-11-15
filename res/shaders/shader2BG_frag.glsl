@@ -1,10 +1,11 @@
 #version 330
 
 in vec3 v_normal;
+in vec4 v_color;     // interpolated vertex color
 
 out vec4 fragment_color;
 
-uniform vec4 colDiffuse;
+uniform vec4 colDiffuse;    // material tint, multiplied with the vertex color
 
 // Key light: a directional light coming from the front (+z, where the camera
 // starts), slightly above and to the right. This is the direction pointing
@@ -23,5 +24,6 @@ void main()
     float diffuse = max(dot(N, keyDir), 0.0);
     float light   = ambient + keyIntensity * diffuse;
 
-    fragment_color = vec4(colDiffuse.rgb * light, colDiffuse.a);
+    vec4 base = v_color * colDiffuse;
+    fragment_color = vec4(base.rgb * light, base.a);
 }

@@ -111,6 +111,9 @@ int main(void)
     shader.locs[SHADER_LOC_VERTEX_NORMAL] =
         GetShaderLocationAttrib(shader, "normal");
 
+    shader.locs[SHADER_LOC_VERTEX_COLOR] =
+        GetShaderLocationAttrib(shader, "color");
+
     // Matrices
     shader.locs[SHADER_LOC_MATRIX_MVP] =
         GetShaderLocation(shader, "mvpMatrix");
@@ -141,7 +144,7 @@ int main(void)
 
             AnalyticScalarField implicit(root.get());
             TMesh mesh;
-            implicit.Polygonize(64, mesh, Box(4.0));
+            implicit.Polygonize(64, mesh, Box(4.0), 1e-4, true);   // true: per-vertex colors
 
             if (mesh.Triangles() == 0) {
                 editor.SetStatus("No surface inside the box [-4, 4]^3", true);
@@ -151,7 +154,8 @@ int main(void)
             // UnloadModel frees the mesh and material maps but not the shared shader
             UnloadModel(model);
             model = LoadModelFromMesh(GenMeshCustom(mesh));
-            model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = PURPLE;
+            // The shader multiplies the vertex colors by this tint: WHITE keeps them as is
+            model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
             model.materials[0].shader = shader;
 
             editor.SetStatus("Generated " + std::to_string(mesh.Triangles()) + " triangles", false);
@@ -375,6 +379,8 @@ static Mesh GenMeshCustom(TMesh& tmesh)
     mesh.vertices = (float *)MemAlloc(mesh.vertexCount * 3 * sizeof(float));
     mesh.texcoords = (float *)MemAlloc(mesh.vertexCount * 2 * sizeof(float));
     mesh.normals = (float *)MemAlloc(mesh.vertexCount * 3 * sizeof(float));
+    if (tmesh.IsColored())
+        mesh.colors = (unsigned char *)MemAlloc(mesh.vertexCount * 4 * sizeof(unsigned char));
 
     for (int tri = 0; tri < mesh.triangleCount; ++tri)
     {
@@ -398,6 +404,16 @@ static Mesh GenMeshCustom(TMesh& tmesh)
             // specific texture layout.
             mesh.texcoords[dst * 2 + 0] = (float)p[0] * 0.5f + 0.5f;
             mesh.texcoords[dst * 2 + 1] = (float)p[2] * 0.5f + 0.5f;
+
+            if(tmesh.IsColored()){
+                // Colors are stored per vertex, like positions: look them up through the vertex index
+                const Color c = tmesh.VertColor(tmesh.VertexIndex(tri, corner));
+                mesh.colors[dst * 4 + 0] = c.r;
+                mesh.colors[dst * 4 + 1] = c.g; 
+                mesh.colors[dst * 4 + 2] = c.b; 
+                mesh.colors[dst * 4 + 3] = c.a; 
+            }
+            
         }
     }
 
