@@ -18,4 +18,8 @@ class Node{
         virtual Color EvaluateColor(const Vector& p)=0;
         virtual float GetLipschitzBound()=0;
         virtual BBox ComputeBBox()=0;
+
+        inline BBox* Bbox(){
+            return &bb;
+        }
 };

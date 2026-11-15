@@ -7,6 +7,12 @@ class BinaryOpBlob: public Node{
         std::unique_ptr<Node> left_child, right_child;
         BinaryOpBlob(std::unique_ptr<Node> l, std::unique_ptr<Node> r)
         : left_child(std::move(l)), right_child(std::move(r)) {}
+
+    public:
+        std::unique_ptr<Node> ReleaseLeft()  { return std::move(left_child); }
+        std::unique_ptr<Node> ReleaseRight() { return std::move(right_child); }
+        Node* Left() const  { return left_child.get(); }
+        Node* Right() const { return right_child.get(); }
 };
 
 class BlendBlob: public BinaryOpBlob{

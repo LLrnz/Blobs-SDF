@@ -75,4 +75,8 @@ class BBox{
         }
 
 
+        double Distance(BBox* b);
+        Vector Middle();
+
+
 };

@@ -13,7 +13,13 @@ class UnaryOpBlob: public Node{
         virtual Vector Transform(const Vector& p)=0;
         UnaryOpBlob(std::unique_ptr<Node> child)
         : child(std::move(child)) {}
-        
+
+    public:
+        std::unique_ptr<Node> ReleaseChild() { return std::move(child); }
+
+        void SetChild(std::unique_ptr<Node> c) { child = std::move(c); }
+
+        Node* Child() const { return child.get(); }
 };
 
 
