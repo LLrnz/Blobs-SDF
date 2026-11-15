@@ -8,6 +8,18 @@
 
 const int WYVILL_N = 3;
 
+enum attenuation_func_type{
+    WYVILL,
+    GAUSSIAN
+};
+
+enum lipschtiz_method_type{
+    ANALYTIC,
+    COMPOSITION,
+    SAMPLING,
+};
+
+
 inline double gaussian(double dist_sqrd, double radius)
 {
     const double variance = radius * radius;
@@ -26,6 +38,7 @@ inline double wyvill(double dist_sqrd, double radius)
 class Blob: public Node{
     protected:
         float potential;
+        float lip_bound;
 
     public:
         Blob(float potential, Color col);
