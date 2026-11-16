@@ -1,0 +1,23 @@
+union(
+	union(
+		union(
+			sphere(-2 0.5 0, 1, 184 229 80),
+			sphere(-2 0 0, 1, 152 80 229)
+		),
+		blend(
+			sphere(-0.75 0.5 0, 1, 184 229 80),
+			sphere(-0.75 0 0, 1, 152 80 229)
+		)
+	),
+	union(
+		difference(
+			sphere(0.75 0.5 0, 1, 184 229 80),
+			sphere(0.75 0 0, 1, 152 80 229)
+		),
+		intersection(
+			sphere(2 0.5 0, 1, 184 229 80),
+			sphere(2 0 0, 1, 152 80 229)
+		)
+	)
+)
+

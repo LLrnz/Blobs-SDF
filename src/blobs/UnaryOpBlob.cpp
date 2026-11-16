@@ -203,7 +203,7 @@ float TaperYBlob::GetLipschitzBound(){
     BBox b = child->ComputeBBox();
     double kmin = std::min(1 + rate * b.Min()[1], 1 + rate * b.Max()[1]);
     if (kmin <= 0)
-        return INFINITY;    // the taper pinches to a point (or flips) inside the shape
+        return INFINITY;
     double rho = MaxRadius(b, 0, 2);
     return child->GetLipschitzBound() * (std::max(1.0, 1.0 / kmin) + std::abs(rate) * rho / kmin);
 }

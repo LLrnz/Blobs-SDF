@@ -1,0 +1,22 @@
+revolution(
+rotateZ(30,
+translate(2 2 0,
+	rotateX(180,
+		twist(0,
+			taper(0.1,
+				scale(1.5 3 1,
+				blend(
+					sphere(0 0.5 0, 1,
+					 30 110 50),
+					sphere(0 0 0, 1,
+					 180 200 50)
+					)
+				)
+			)	
+		)
+	)
+)
+)
+
+)
+

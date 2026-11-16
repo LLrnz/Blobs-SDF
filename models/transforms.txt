@@ -1,0 +1,20 @@
+union(
+	union(
+	translate(-2 1 0,
+		twist(150,
+			scale(2 3 1,
+				sphere(0 0 0, 1, 102 229 80)
+			)
+		),
+	)
+		
+		taper(0.5,
+			capsule(0 0 0, 0 2 0, 1, 229 80 182)
+		)
+	),
+	translate(2 0 0,
+		bend(15,
+			capsule(0 0 0, 2 1 0, 1, 10 120 229)
+		)
+	)
+)
